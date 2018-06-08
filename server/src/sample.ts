@@ -5,10 +5,10 @@ webRTCDirect.on("data", (data: JSON, channel: Channel) => {
   console.log(`${channel.id} received data`, data)
   channel.dc.send(JSON.stringify(data))
 })
-webRTCDirect.on("error", (error: any, channel: Channel) => {
+webRTCDirect.on("error", (error: Error, channel: Channel) => {
   console.log(`${channel.id} error`, error)
 })
-webRTCDirect.on("closed", (info: any, channelId: string) => {
-  console.log(`${channelId} closed`, info)
+webRTCDirect.on("closed", (channelId: string) => {
+  console.log(`${channelId} closed`)
 })
 webRTCDirect.listen()
