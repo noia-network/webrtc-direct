@@ -4,25 +4,25 @@ import express from "express"
 import http from "http"
 const wrtc = require("wrtc")
 
-enum Statuses {
+export enum Statuses {
   WAITING_FOR_ANSWER = "WAITING_FOR_ANSWER",
   CHANNEL_ESTABLISHED = "CHANNEL_ESTABLISHED",
   ANSWERED = "ANSWERED"
 }
 
-interface Channel {
+export interface Channel {
   id: string,
   pc: any,
   status: Statuses,
   dc: any
 }
 
-interface IceCandidate {
+export interface IceCandidate {
   sdpMLineIndex: any,
   candidate: any
 }
 
-export = class WebRTCDirect extends EventEmitter {
+export class WebRTCDirect extends EventEmitter {
   public app = express()
   public channels: { [name: string]: Channel }
   public server: http.Server
@@ -114,19 +114,17 @@ export = class WebRTCDirect extends EventEmitter {
     }
 
     const dc1 = channel.dc = pc1.createDataChannel("test")
-    channel.dc.onopen = function() {
+    channel.dc.onopen = () => {
         console.log(`${channelId} pc1: data channel open`)
         channel.status = Statuses.CHANNEL_ESTABLISHED,
         dc1.onmessage = (event: any) => {
           let data
           try {
             data = JSON.parse(event.data)
-            console.log(`${channelId} dc1: received`, data)
+            this.emit("data", data, channel)
           } catch (err) {
-            data = event.data
-            console.log(`${channelId} dc1: received invalid JSON`)
+            this.emit("error", err, channel)
           }
-          dc1.send(`pong ${data}`)
         }
     }
 
@@ -219,6 +217,7 @@ export = class WebRTCDirect extends EventEmitter {
     if (!channel) return
     console.log(`${channel.id} pc1: close`)
     channel.pc.close()
+    this.emit("closed", channel.id)
     delete this.channels[channel.id]
     return res.status(200).send({
         success: true
