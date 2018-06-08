@@ -6,9 +6,14 @@
     <title>Client RTCDataChannel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script src="main.js"></script>
 </head>
 <body>
-    
+    <button onclick="connect()">Connect</button>
+    <button onclick="close()">Close</button><br>
+    <input id="text-input" type="text"><button onclick="send()">Send</button><br>
+    <textarea id="received-texts" cols=100 rows=30 readonly></textarea>
 </body>
 </html>

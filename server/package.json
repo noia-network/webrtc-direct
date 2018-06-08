@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "npm run build && node ./dist/main.js"
+    "start": "npm run build && node ./dist/sample.js"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +14,12 @@
   "devDependencies": {
     "tslint": "^5.10.0",
     "typescript": "^2.9.1"
+  },
+  "dependencies": {
+    "@types/node": "^10.3.2",
+    "@types/q": "^1.5.0",
+    "body-parser": "^1.18.3",
+    "q": "^1.5.1",
+    "wrtc": "^0.1.4"
   }
 }
