@@ -1,9 +1,10 @@
 import { WebRTCDirect, Channel } from "./main"
+import path from "path"
 const ContentsClient = require("noia-node-contents-client")
+const dotenv = require("dotenv").config({ path: path.resolve(process.cwd(), ".env")  })
+const config = dotenv.error ? {} : dotenv.parsed
 
-const PATH_TO_STORAGE = "./storage"
-
-const contentsClient = new ContentsClient(null, PATH_TO_STORAGE)
+const contentsClient = new ContentsClient(null, config.STORAGE_DIR)
 contentsClient.on("seeding", (infoHashes: string[]) => {
   console.log("seeding", infoHashes)
 })
