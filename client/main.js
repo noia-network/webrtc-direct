@@ -7,7 +7,7 @@ var iceCandidateDeferred;
 function connect() {
     pc2 = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-});
+    });
     iceCandidates = [];
     iceCandidateDeferred = $.Deferred();
 
@@ -55,7 +55,13 @@ function send() {
     dc2.send($("#text-input").val());
 }
 
-function close() {
+function stop() {
+    $.post(`http://localhost:3000/channels/${channelData.channel_id}/close`)
+    .then(result => {
+        console.log(`${channelData.channel_id} closed`, result);
+    }).fail(error => {
+        console.error(`${channelData.channel_id} closed, error =`, error);
+    });
 }
 
 function handleError(error) {
