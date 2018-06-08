@@ -1,9 +1,60 @@
 import { WebRTCDirect, Channel } from "./main"
+const ContentsClient = require("noia-node-contents-client")
+
+const PATH_TO_STORAGE = "./storage"
+
+const contentsClient = new ContentsClient(null, PATH_TO_STORAGE)
+contentsClient.on("seeding", (infoHashes: string[]) => {
+  console.log("seeding", infoHashes)
+})
+contentsClient.on("downloaded", (chunkSize: number) => {
+  console.log("downloaded", chunkSize)
+})
+contentsClient.on("uploaded", (chunkSize: number) => {
+  console.log("uploaded", chunkSize)
+})
+contentsClient.start()
 
 const webRTCDirect = new WebRTCDirect()
-webRTCDirect.on("data", (data: JSON, channel: Channel) => {
-  console.log(`${channel.id} received data`, data)
-  channel.dc.send(JSON.stringify(data))
+webRTCDirect.on("data", (data: any, channel: Channel) => {
+  let params
+  try {
+    params = JSON.parse(data)
+  } catch (err) {
+    console.error("expecting JSON")
+    return
+  }
+
+  const piece = params.piece
+  const offset = params.offset
+  const length = params.length
+  const infoHash = params.infoHash
+
+  if (typeof piece === "undefined"
+    || typeof offset === "undefined"
+    || typeof infoHash === "undefined") {
+      console.error(`bad request infoHash=${infoHash} index=${piece} offset=${offset} length=${length}`)
+    return
+  } else {
+    console.info(`request infoHash=${infoHash} index=${piece} offset=${offset} length=${length}`)
+  }
+
+  const content = contentsClient.get(infoHash)
+
+  if (typeof content === "undefined") {
+    console.error(`404 response infoHash=${infoHash}`)
+    return
+  }
+
+  content.getResponseBuffer(piece, offset, length, (resBuff: any) => {
+    console.log(`response infoHash=${infoHash} index=${piece} offset=${offset} length=${resBuff.length}`)
+    try {
+      channel.dc.send(resBuff)
+      content.emit("uploaded", resBuff.length)
+    } catch (e) {
+      console.warn("Send content", e) // TODO: log property or just ignore.
+    }
+  })
 })
 webRTCDirect.on("error", (error: Error, channel: Channel) => {
   console.log(`${channel.id} error`, error)

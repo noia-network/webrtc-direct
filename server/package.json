@@ -19,6 +19,7 @@
     "@types/node": "^10.3.2",
     "@types/q": "^1.5.0",
     "body-parser": "^1.18.3",
+    "noia-node-contents-client": "git+https://github.com/noia-network/noia-node-contents-client.git",
     "q": "^1.5.1",
     "wrtc": "^0.1.4"
   }
