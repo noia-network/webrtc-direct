@@ -118,9 +118,15 @@ export = class WebRTCDirect extends EventEmitter {
         console.log(`${channelId} pc1: data channel open`)
         channel.status = Statuses.CHANNEL_ESTABLISHED,
         dc1.onmessage = (event: any) => {
-            var data = event.data
-            console.log(`${channelId} dc1: received "${data}"`)
-            dc1.send(`pong ${data}`)
+          let data
+          try {
+            data = JSON.parse(event.data)
+            console.log(`${channelId} dc1: received`, data)
+          } catch (err) {
+            data = event.data
+            console.log(`${channelId} dc1: received invalid JSON`)
+          }
+          dc1.send(`pong ${data}`)
         }
     }
 
