@@ -4,6 +4,8 @@ var channelData;
 var iceCandidates;
 var iceCandidateDeferred;
 
+const address = `localhost:3000`
+
 function connect() {
     pc2 = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
@@ -37,7 +39,7 @@ function connect() {
         };
     };
 
-    $.post("http://localhost:3000/channels").then(data => {
+    $.post(`http://${hostname}/channels`).then(data => {
         console.log("connect", data);
         channelData = data;
         setRemoteDescription2(data.offer);
@@ -56,7 +58,7 @@ function send() {
 }
 
 function stop() {
-    $.post(`http://localhost:3000/channels/${channelData.channel_id}/close`)
+    $.post(`http://${hostname}/channels/${channelData.channel_id}/close`)
     .then(result => {
         console.log(`${channelData.channel_id} closed`, result);
     }).fail(error => {
@@ -72,7 +74,7 @@ function setRemoteDescription1(desc) {
     console.log(`${channelData.channel_id} pc1: set remote description`);
     iceCandidateDeferred.then(() => {
         $.post({
-            url: `http://localhost:3000/channels/${channelData.channel_id}/answer`,
+            url: `http://${hostname}/channels/${channelData.channel_id}/answer`,
             data: JSON.stringify({
                 answer: desc,
                 ice_candidates: iceCandidates
