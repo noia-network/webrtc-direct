@@ -5,19 +5,34 @@ const dotenv = require("dotenv").config({ path: path.resolve(process.cwd(), ".en
 const config = dotenv.error ? {} : dotenv.parsed
 
 const contentsClient = new ContentsClient(null, config.STORAGE_DIR)
-contentsClient.on("seeding", (infoHashes: string[]) => {
-  console.log("seeding", infoHashes)
-})
-contentsClient.on("downloaded", (chunkSize: number) => {
-  console.log("downloaded", chunkSize)
-})
-contentsClient.on("uploaded", (chunkSize: number) => {
-  console.log("uploaded", chunkSize)
-})
+registerContentsClientListeners()
 contentsClient.start()
 
 const webRTCDirect = new WebRTCDirect()
 webRTCDirect.on("data", (data: any, channel: Channel) => {
+  handleRequest(data, channel)
+})
+webRTCDirect.on("error", (error: Error, channel: Channel) => {
+  console.log(`${channel.id} error`, error)
+})
+webRTCDirect.on("closed", (channelId: string) => {
+  console.log(`${channelId} closed`)
+})
+webRTCDirect.listen()
+
+function registerContentsClientListeners () {
+  contentsClient.on("seeding", (infoHashes: string[]) => {
+    console.log("seeding", infoHashes)
+  })
+  contentsClient.on("downloaded", (chunkSize: number) => {
+    console.log("downloaded", chunkSize)
+  })
+  contentsClient.on("uploaded", (chunkSize: number) => {
+    console.log("uploaded", chunkSize)
+  })
+}
+
+function handleRequest (data: string, channel: Channel) {
   let params
   try {
     params = JSON.parse(data)
@@ -56,11 +71,4 @@ webRTCDirect.on("data", (data: any, channel: Channel) => {
       console.warn("Send content", e) // TODO: log property or just ignore.
     }
   })
-})
-webRTCDirect.on("error", (error: Error, channel: Channel) => {
-  console.log(`${channel.id} error`, error)
-})
-webRTCDirect.on("closed", (channelId: string) => {
-  console.log(`${channelId} closed`)
-})
-webRTCDirect.listen()
+}
