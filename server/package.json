@@ -6,12 +6,14 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "npm run build && node ./dist/sample.js"
+    "start": "npm run build && node ./dist/sample.js",
+    "dev": "npx nodemon"
   },
   "keywords": [],
   "author": "",
   "license": "LGPL-2.1",
   "devDependencies": {
+    "nodemon": "^1.17.5",
     "tslint": "^5.10.0",
     "typescript": "^2.9.1"
   },
