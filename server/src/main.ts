@@ -27,13 +27,14 @@ export class WebRTCDirect extends EventEmitter {
   public channels: { [name: string]: Channel }
   public server: http.Server
   public port: number = 3000
-  public ip: string = "0.0.0.0"
-  constructor () {
+  public ip: string
+  constructor (ip: string) {
     super()
     this.server = http.createServer(this.app)
     this.channels = {}
+    this.ip = ip || "0.0.0.0"
 
-    this.app.use(require('body-parser').json())
+    this.app.use(require("body-parser").json())
     this.app.use(function(req: express.Request, res: express.Response, next: express.NextFunction) {
       res.header("Access-Control-Allow-Origin", "*")
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
@@ -64,9 +65,13 @@ export class WebRTCDirect extends EventEmitter {
   }
 
   _postChannels (req: express.Request, res: express.Response) {
+    const isUseful = (candidate: any): boolean => {
+      return candidate.includes("passive") && candidate.includes(this.ip)
+    }
     const pc1 = new wrtc.RTCPeerConnection({
       iceServers: [ { urls: "stun:stun.l.google.com:19302" } ]
     })
+
     const channelId = this.generateId()
     this.channels[channelId] = {
       id: channelId,
@@ -86,13 +91,38 @@ export class WebRTCDirect extends EventEmitter {
         iceCandidateDeferred.resolve()
       } else {
         const iceCandidate: IceCandidate = {
-            sdpMLineIndex: candidate.candidate.sdpMLineIndex,
-            candidate: candidate.candidate.candidate
+          sdpMLineIndex: candidate.candidate.sdpMLineIndex,
+          candidate: candidate.candidate.candidate
         }
-        console.log(`${channelId} pc1.onicecandidate`, JSON.stringify(iceCandidate))
-        iceCandidates.push(iceCandidate)
+        if (isUseful(candidate.candidate.candidate)) {
+          console.log(`${channelId} pc1.onicecandidate`, JSON.stringify(iceCandidate))
+          iceCandidates.push(iceCandidate)
+        } 
       }
     }
+
+    const dc1 = channel.dc = pc1.createDataChannel("test")
+    channel.dc.onopen = () => {
+        console.log(`${channelId} pc1: data channel open`)
+        channel.status = Statuses.CHANNEL_ESTABLISHED,
+        dc1.onmessage = (event: any) => {
+          this.emit("data", event.data, channel)
+        }
+    }
+
+    createOffer1()
+
+    Promise.all([
+        iceCandidateDeferred.promise,
+        localDescriptionDeferred.promise
+    ]).then(() => {
+        res.status(200).json({
+            success: true,
+            channel_id: channelId,
+            offer: localDescription,
+            ice_candidates: iceCandidates,
+        })
+    })
 
     function setRemoteDescription2(desc: any) {
       localDescription = desc
@@ -113,35 +143,12 @@ export class WebRTCDirect extends EventEmitter {
         pc1.createOffer(setLocalDescription1, handleError)
     }
 
-    const dc1 = channel.dc = pc1.createDataChannel("test")
-    channel.dc.onopen = () => {
-        console.log(`${channelId} pc1: data channel open`)
-        channel.status = Statuses.CHANNEL_ESTABLISHED,
-        dc1.onmessage = (event: any) => {
-          this.emit("data", event.data, channel)
-        }
-    }
-
     function handleError (error: any) {
       res.status(500).json({
         success: false,
         error: error
       })
     }
-
-    createOffer1()
-
-    Promise.all([
-        iceCandidateDeferred.promise,
-        localDescriptionDeferred.promise
-    ]).then(() => {
-        res.status(200).json({
-            success: true,
-            channel_id: channelId,
-            offer: localDescription,
-            ice_candidates: iceCandidates,
-        })
-    })
   }
 
   _postChannelAnswer (req: express.Request, res: express.Response) {
