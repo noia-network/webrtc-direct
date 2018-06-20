@@ -3,6 +3,7 @@ import Q from "q"
 import express from "express"
 import http from "http"
 import morgan from "morgan"
+const bodyParser = require("body-parser")
 const wrtc = require("wrtc")
 
 export enum Statuses {
@@ -25,23 +26,21 @@ export interface IceCandidate {
 
 export class WebRTCDirect extends EventEmitter {
   public app = express()
-  public channels: { [name: string]: Channel }
-  public server: http.Server
-  public port: number = 3000
+  public channels: { [name: string]: Channel } = {}
+  public server: http.Server = http.createServer(this.app)
   public ip: string
+  public port: number = 3000
   constructor (ip: string) {
     super()
-    this.server = http.createServer(this.app)
-    this.channels = {}
     this.ip = ip || "0.0.0.0"
 
     this.app.use(morgan("dev"))
-    this.app.use(require("body-parser").json())
+    this.app.use(bodyParser.json())
     this.app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
       res.header("Access-Control-Allow-Origin", "*")
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
       next()
-    });
+    })
     this.app.post("/channels", this.postChannels.bind(this))
     this.app.post("/channels/:channelId/answer", this.postChannelAnswer.bind(this))
     this.app.post("/channels/:channelId/close", this.postChannelClose.bind(this))
