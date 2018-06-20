@@ -43,13 +43,13 @@ export class WebRTCDirect extends EventEmitter {
     this.app.post("/channels/:channelId/close", this.postChannelClose.bind(this))
   }
 
-  listen () {
+  public listen () {
     this.server = this.app.listen(this.port, this.ip, () => {
       console.log(`Listening for HTTP requests on port ${this.port}`)
     })
   }
 
-  generateId(): string {
+  private generateId(): string {
     const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     const ID_LENGTH = 12
     let id: string = ""
@@ -199,7 +199,7 @@ export class WebRTCDirect extends EventEmitter {
     addIceCandidates(req.body.ice_candidates)
   }
 
-  channelCheck(req: express.Request, res: express.Response) {
+  private channelCheck(req: express.Request, res: express.Response) {
     const channelId = req.params.channelId
     if (!(channelId in this.channels)) {
         res.status(404).json({
