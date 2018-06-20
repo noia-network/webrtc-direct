@@ -1,5 +1,6 @@
 import EventEmitter from "events"
 import Q from "q"
+import cors from "./cors"
 import express from "express"
 import http from "http"
 import morgan from "morgan"
@@ -36,11 +37,7 @@ export class WebRTCDirect extends EventEmitter {
 
     this.app.use(morgan("dev"))
     this.app.use(bodyParser.json())
-    this.app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-      res.header("Access-Control-Allow-Origin", "*")
-      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-      next()
-    })
+    this.app.use(cors("*"))
     this.app.post("/channels", this.postChannels.bind(this))
     this.app.post("/channels/:channelId/answer", this.postChannelAnswer.bind(this))
     this.app.post("/channels/:channelId/close", this.postChannelClose.bind(this))
