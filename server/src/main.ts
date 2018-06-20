@@ -50,8 +50,8 @@ export class WebRTCDirect extends EventEmitter {
   }
 
   private generateId(): string {
-    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    const ID_LENGTH = 12
+    const possible: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    const ID_LENGTH: number = 12
     let id: string = ""
     for (let i = 0; i < ID_LENGTH; i++) {
       id += possible.charAt(Math.floor(Math.random() * possible.length))
@@ -70,7 +70,7 @@ export class WebRTCDirect extends EventEmitter {
       iceServers: [ { urls: "stun:stun.l.google.com:19302" } ]
     })
 
-    const channelId = this.generateId()
+    const channelId: string = this.generateId()
     this.channels[channelId] = {
       id: channelId,
       pc: pc1,
