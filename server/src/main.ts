@@ -37,7 +37,7 @@ export class WebRTCDirect extends EventEmitter {
 
     this.app.use(morgan("dev"))
     this.app.use(require("body-parser").json())
-    this.app.use(function(req: express.Request, res: express.Response, next: express.NextFunction) {
+    this.app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
       res.header("Access-Control-Allow-Origin", "*")
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
       next()
