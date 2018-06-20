@@ -26,11 +26,11 @@ export interface IceCandidate {
 }
 
 export class WebRTCDirect extends EventEmitter {
-  public app = express()
-  public channels: { [name: string]: Channel } = {}
-  public server: http.Server = http.createServer(this.app)
-  public ip: string
-  public port: number = 3000
+  private app = express()
+  private channels: { [name: string]: Channel } = {}
+  private server: http.Server = http.createServer(this.app)
+  private ip: string
+  private port: number = 3000
   constructor (ip: string) {
     super()
     this.ip = ip || "0.0.0.0"
@@ -44,7 +44,7 @@ export class WebRTCDirect extends EventEmitter {
   }
 
   public listen () {
-    this.server = this.app.listen(this.port, this.ip, () => {
+    this.server.listen(this.port, this.ip, () => {
       console.log(`Listening for HTTP requests on port ${this.port}`)
     })
   }
