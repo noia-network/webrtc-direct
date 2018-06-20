@@ -2,6 +2,7 @@ import EventEmitter from "events"
 import Q from "q"
 import express from "express"
 import http from "http"
+import morgan from "morgan"
 const wrtc = require("wrtc")
 
 export enum Statuses {
@@ -34,15 +35,16 @@ export class WebRTCDirect extends EventEmitter {
     this.channels = {}
     this.ip = ip || "0.0.0.0"
 
+    this.app.use(morgan("dev"))
     this.app.use(require("body-parser").json())
     this.app.use(function(req: express.Request, res: express.Response, next: express.NextFunction) {
       res.header("Access-Control-Allow-Origin", "*")
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
       next()
     });
-    this.app.post("/channels", this._postChannels.bind(this))
-    this.app.post("/channels/:channelId/answer", this._postChannelAnswer.bind(this))
-    this.app.post("/channels/:channelId/close", this._postChannelClose.bind(this))
+    this.app.post("/channels", this.postChannels.bind(this))
+    this.app.post("/channels/:channelId/answer", this.postChannelAnswer.bind(this))
+    this.app.post("/channels/:channelId/close", this.postChannelClose.bind(this))
   }
 
   listen () {
@@ -64,7 +66,7 @@ export class WebRTCDirect extends EventEmitter {
     return id
   }
 
-  _postChannels (req: express.Request, res: express.Response) {
+  private postChannels (req: express.Request, res: express.Response) {
     const isUseful = (candidate: any): boolean => {
       return candidate.includes("passive") && candidate.includes(this.ip)
     }
@@ -151,7 +153,7 @@ export class WebRTCDirect extends EventEmitter {
     }
   }
 
-  _postChannelAnswer (req: express.Request, res: express.Response) {
+  private postChannelAnswer (req: express.Request, res: express.Response) {
     let channel = this.channelCheck(req, res)
     if (!channel) return
 
@@ -213,7 +215,7 @@ export class WebRTCDirect extends EventEmitter {
     return this.channels[channelId]
   }
 
-  _postChannelClose (req: express.Request, res: express.Response) {
+  private postChannelClose (req: express.Request, res: express.Response) {
     const channel = this.channelCheck(req, res)
     if (!channel) return
     console.log(`${channel.id} pc1: close`)

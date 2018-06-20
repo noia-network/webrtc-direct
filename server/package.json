@@ -20,11 +20,13 @@
   },
   "dependencies": {
     "@types/express": "^4.16.0",
+    "@types/morgan": "^1.7.35",
     "@types/node": "^10.3.2",
     "@types/q": "^1.5.0",
     "body-parser": "^1.18.3",
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
+    "morgan": "^1.9.0",
     "noia-node-contents-client": "git+https://github.com/noia-network/noia-node-contents-client.git",
     "q": "^1.5.1",
     "wrtc": "^0.1.4"
