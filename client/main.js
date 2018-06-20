@@ -7,6 +7,9 @@ var iceCandidateDeferred;
 const address = `localhost:3000`
 
 function connect() {
+    const isUseful = (candidate) => {
+        return candidate.includes("active")
+    }
     pc2 = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
@@ -20,9 +23,11 @@ function connect() {
             var iceCandidate = {
                 sdpMLineIndex: candidate.candidate.sdpMLineIndex,
                 candidate: candidate.candidate.candidate
-            }                   
-            console.log(`${channelData.channel_id} pc2.onicecandidate`, JSON.stringify(iceCandidate));
-            iceCandidates.push(iceCandidate);
+            }
+            if (isUseful(candidate.candidate.candidate)) {
+                console.log(`${channelData.channel_id} pc2.onicecandidate`, JSON.stringify(iceCandidate));
+                iceCandidates.push(iceCandidate);
+            }             
         }
     };
 
