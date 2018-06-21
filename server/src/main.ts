@@ -1,5 +1,6 @@
 import EventEmitter from "events"
 import Q from "q"
+import chalk from "chalk"
 import cors from "./cors"
 import express from "express"
 import http from "http"
@@ -15,9 +16,9 @@ export enum Statuses {
 
 export interface Channel {
   id: string,
-  pc: any,
+  pc: any, // peer connection
   status: Statuses,
-  dc: any
+  dc: any // data channel
 }
 
 export interface IceCandidate {
@@ -31,6 +32,8 @@ export class WebRTCDirect extends EventEmitter {
   private server: http.Server = http.createServer(this.app)
   private ip: string
   private port: number = 3000
+  // TODO
+  //private candidatesMap = new Map<IceCandidate /* local */, IceCandidate /* remote */>()
   constructor (ip: string) {
     super()
     this.ip = ip || "0.0.0.0"
@@ -93,7 +96,7 @@ export class WebRTCDirect extends EventEmitter {
           candidate: candidate.candidate.candidate
         }
         if (isUseful(candidate.candidate.candidate)) {
-          console.log(`${channelId} pc1.onicecandidate`, JSON.stringify(iceCandidate))
+          console.log(chalk.cyanBright(`${channelId} pc1.onicecandidate`), JSON.stringify(iceCandidate, null, 2))
           iceCandidates.push(iceCandidate)
         } 
       }
@@ -101,8 +104,8 @@ export class WebRTCDirect extends EventEmitter {
 
     const dc1 = channel.dc = pc1.createDataChannel("test")
     channel.dc.onopen = () => {
-        console.log(`${channelId} pc1: data channel open`)
-        channel.status = Statuses.CHANNEL_ESTABLISHED,
+        console.log(chalk.greenBright(`${channelId} pc1: data channel open`))
+        channel.status = Statuses.CHANNEL_ESTABLISHED
         dc1.onmessage = (event: any) => {
           this.emit("data", event.data, channel)
         }
@@ -128,7 +131,7 @@ export class WebRTCDirect extends EventEmitter {
     }   
 
     function setLocalDescription1(desc: any) {
-        console.log(`${channelId} pc1: set local description`)
+        console.log(chalk.cyanBright(`${channelId} pc1: set local description:`), desc.sdp)
         pc1.setLocalDescription(
             new wrtc.RTCSessionDescription(desc),
             setRemoteDescription2.bind(null, desc),
@@ -137,7 +140,7 @@ export class WebRTCDirect extends EventEmitter {
     }
 
     function createOffer1() {
-        console.log(`${channelId} pc1: create offer`)
+        console.log(chalk.cyanBright(`${channelId} pc1: create offer`))
         pc1.createOffer(setLocalDescription1, handleError)
     }
 
@@ -164,17 +167,22 @@ export class WebRTCDirect extends EventEmitter {
       if (!channel) {
         throw new Error("channel null")
       }
-      console.log(`${channel.id} pc1: set remote description`)
-      channel.status = Statuses.ANSWERED,
+      console.log(chalk.magentaBright(`${channel.id} pc1: set remote description`))
       channel.pc.setRemoteDescription(
           new wrtc.RTCSessionDescription(desc),
           () => {
               res.status(200).json({
                   success: true
               })
+              if (!channel) {
+                throw new Error("channel shouldn't be destroyed!")
+              }
+              console.log(chalk.cyanBright("channel.pc.localDescription.sdp"), channel.pc.localDescription.sdp)
+              console.log(chalk.magentaBright("channel.pc.remoteDescription.sdp"), channel.pc.remoteDescription.sdp)
           },
           handleError
       )
+      channel.status = Statuses.ANSWERED;
     }
 
     function handleError (error: any) {
@@ -191,7 +199,7 @@ export class WebRTCDirect extends EventEmitter {
       }
       const channelId = channel.id
       iceCandidates.forEach((iceCandidate: IceCandidate) => {
-        console.log(`${channelId} pc1: adding ice candidate`, JSON.stringify(iceCandidate))
+        console.log(chalk.cyanBright(`${channelId} pc1: adding ice candidate`), JSON.stringify(iceCandidate))
       })
     }
 
@@ -214,7 +222,7 @@ export class WebRTCDirect extends EventEmitter {
   private postChannelClose (req: express.Request, res: express.Response) {
     const channel = this.channelCheck(req, res)
     if (!channel) return
-    console.log(`${channel.id} pc1: close`)
+    console.log(chalk.redBright(`${channel.id} pc1: close`))
     channel.pc.close()
     this.emit("closed", channel.id)
     delete this.channels[channel.id]
