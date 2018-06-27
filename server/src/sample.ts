@@ -8,7 +8,7 @@ const contentsClient = new ContentsClient(null, config.STORAGE_DIR)
 registerContentsClientListeners()
 contentsClient.start()
 
-const webRTCDirect = new WebRTCDirect(config.IP)
+const webRTCDirect = new WebRTCDirect(config.CONTROL_PORT, config.DATA_PORT, config.IP)
 webRTCDirect.on("data", (data: any, channel: Channel) => {
   handleRequest(data, channel)
 })

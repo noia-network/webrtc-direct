@@ -3,16 +3,36 @@ var dc2;
 var channelData;
 var iceCandidates;
 var iceCandidateDeferred;
+var portToReplace
 
 const address = `localhost:3000`
+const CONTROL_PORT = "60123"
 
 function connect() {
-    const isUseful = (candidate) => {
-        return candidate.includes("active")
+    const isUDP = (candidate) => {
+        return candidate.includes("UDP")
     }
-    pc2 = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-    });
+    pc2 = new RTCPeerConnection();
+
+    pc2.onnegotationneeded = (event) => {
+        console.log(`negotation-needed`, event)
+    }
+    pc2.onicecandidateerror = (event) => {
+        console.log(`ice-candidate`, event)
+    }
+    pc2.onsignalingstatechange = (event) => {
+        console.log(`signaling-state`, pc2.signalingState)
+    }
+    pc2.oniceconnectionstatechange = (event) => {
+        console.log(`ice-connection-state`, pc2.iceConnectionState)
+    }
+    pc2.onicegatheringstatechange = (event) => {
+        console.log(`ice-gathering-state`, pc2.iceGatheringState)
+    }
+    pc2.onconnectionstatechange = (event) => {
+        console.log(`connection-state`, pc2.connectionState)
+    }
+
     iceCandidates = [];
     iceCandidateDeferred = $.Deferred();
 
@@ -24,10 +44,11 @@ function connect() {
                 sdpMLineIndex: candidate.candidate.sdpMLineIndex,
                 candidate: candidate.candidate.candidate
             }
-            if (isUseful(candidate.candidate.candidate)) {
-                console.log(`${channelData.channel_id} pc2.onicecandidate`, JSON.stringify(iceCandidate));
+
+            if (isUDP(iceCandidate.candidate)) {
+                console.log(`${channelData.channel_id} pc2.onicecandidate (before)`, JSON.stringify(iceCandidate));
                 iceCandidates.push(iceCandidate);
-            }             
+            }
         }
     };
 
@@ -48,18 +69,24 @@ function connect() {
         console.log("connect", data);
         channelData = data;
         setRemoteDescription2(data.offer);
-        for (let i in data.ice_candidates) {
-            let iceCandidate = data.ice_candidates[i];
-            console.log(`${channelData.channel_id} adding ice candidate`, JSON.stringify(iceCandidate)); 
+        data.ice_candidates.forEach((iceCandidate) => {
+            console.log(`${channelData.channel_id} adding remote ice candidates`, JSON.stringify(iceCandidate)); 
             pc2.addIceCandidate(new RTCIceCandidate(iceCandidate));
-        }
+        })
     }).fail(error => {
         console.error("connect", error);
     })
 }
 
 function send() {
-    dc2.send($("#text-input").val());
+    const text = JSON.stringify({
+        "infoHash": "ebb52b53ff9459dacb8ab814144416e7164e06df",
+        "piece": 0,
+        "offset": 0,
+        "length": 0
+    })
+    dc2.send(text);
+    // dc2.send($("#text-input").val());
 }
 
 function stop() {
@@ -76,7 +103,7 @@ function handleError(error) {
 }
 
 function setRemoteDescription1(desc) {
-    console.log(`${channelData.channel_id} pc1: set remote description`);
+    console.log(`${channelData.channel_id} pc2: set remote description1 (send to node)`, desc.type, desc.sdp);
     iceCandidateDeferred.then(() => {
         $.post({
             url: `http://${address}/channels/${channelData.channel_id}/answer`,
@@ -96,7 +123,7 @@ function setRemoteDescription1(desc) {
 }
 
 function setLocalDescription2(desc) {
-    console.log(`${channelData.channel_id} pc2: set local description`);
+    console.log(`${channelData.channel_id} pc2: set local description`, desc.type, desc.sdp);
     pc2.setLocalDescription(
         new RTCSessionDescription(desc),
         setRemoteDescription1.bind(null, desc),
@@ -113,11 +140,9 @@ function createAnswer2() {
 }
 
 function setRemoteDescription2(desc) {
-    console.log(`${channelData.channel_id} pc2: set remote description`);
+    console.log(`${channelData.channeisUsefull_id} pc2: set remote description`, desc.type, desc.sdp);
     pc2.setRemoteDescription(
         new RTCSessionDescription(desc),       
         createAnswer2,
         handleError);
 }
-
-//pc2.addIceCandidate(candidate.candidate);
