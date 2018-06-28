@@ -4,6 +4,8 @@
     "description": "",
     "main": "dist/main.js",
     "scripts": {
+        "pretest": "tsc -p . --noEmit",
+        "test": "tslint --project . --config ./tslint.json && echo Successfully passed tslint test.",
         "build": "tsc",
         "watch": "tsc -w",
         "start": "npm run build && node ./dist/sample.js",
