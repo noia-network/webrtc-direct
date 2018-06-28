@@ -5,7 +5,7 @@ var iceCandidates;
 var iceCandidateDeferred;
 var portToReplace
 
-const address = `localhost:3000`
+const address = `danielius-remote.noia.network:3000`
 const CONTROL_PORT = "60123"
 
 function connect() {
