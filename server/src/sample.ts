@@ -1,41 +1,47 @@
-import { WebRTCDirect } from "./main";
-import Channel from "./channel";
-import path from "path";
-const ContentsClient = require("noia-node-contents-client");
-const dotenv = require("dotenv").config({ path: path.resolve(process.cwd(), ".env") });
-const config = dotenv.error ? {} : dotenv.parsed;
+const ContentsClient = require("@noia-network/node-contents-client"); // tslint:disable-line
+import * as dotenv from "dotenv";
+import * as path from "path";
+import { Channel } from "./channel";
+import { WebRTCDirect } from "./index";
+import { logger } from "./logger";
+
+const dotenvConfig = dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+const config = dotenvConfig.parsed;
+if (dotenvConfig.error || !config) {
+    throw new Error("could not read config file");
+}
 
 const contentsClient = new ContentsClient(null, config.STORAGE_DIR);
 registerContentsClientListeners();
 contentsClient.start();
 
-const webRTCDirect = new WebRTCDirect(config.CONTROL_PORT, config.DATA_PORT, config.IP);
+const webRTCDirect = new WebRTCDirect(Number(config.CONTROL_PORT), Number(config.DATA_PORT), config.IP);
 webRTCDirect.on("connection", (channel: Channel) => {
     channel.on("data", (data: any) => {
         handleRequest(data, channel);
     });
     channel.on("error", (error: Error) => {
-        console.log(`${channel.id} error`, error);
+        logger.info(`${channel.id} error`, error);
     });
     channel.on("closed", () => {
-        console.log(`${channel.id} closed`);
+        logger.info(`${channel.id} closed`);
     });
 });
 webRTCDirect.listen();
 
-function registerContentsClientListeners() {
+function registerContentsClientListeners(): void {
     contentsClient.on("seeding", (infoHashes: string[]) => {
-        console.log("seeding", infoHashes);
+        logger.info("seeding", infoHashes);
     });
     contentsClient.on("downloaded", (chunkSize: number) => {
-        console.log("downloaded", chunkSize);
+        logger.info("downloaded", chunkSize);
     });
     contentsClient.on("uploaded", (chunkSize: number) => {
-        console.log("uploaded", chunkSize);
+        logger.info("uploaded", chunkSize);
     });
 }
 
-function handleRequest(data: string, channel: Channel) {
+function handleRequest(data: string, channel: Channel): void {
     let params;
     try {
         params = JSON.parse(data);
@@ -64,7 +70,7 @@ function handleRequest(data: string, channel: Channel) {
     }
 
     content.getResponseBuffer(piece, offset, length, (resBuff: any) => {
-        console.log(`response infoHash=${infoHash} index=${piece} offset=${offset} length=${resBuff.length}`);
+        logger.info(`response infoHash=${infoHash} index=${piece} offset=${offset} length=${resBuff.length}`);
         try {
             channel.dc.send(resBuff);
             content.emit("uploaded", resBuff.length);

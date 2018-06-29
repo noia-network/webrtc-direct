@@ -1,17 +1,23 @@
 {
     "compilerOptions": {
-        "target": "es2015",
+        "declaration": true,
+        "inlineSourceMap": true,
+        "inlineSources": true,
         "module": "commonjs",
-        "sourceMap": true,
+        "moduleResolution": "node",
+        "noEmitHelpers": true,
         "outDir": "dist",
+        "rootDir": "src",
         "strict": true,
-        "noImplicitAny": true,
-        "baseUrl": "./",
-        "paths": {
-            "*": ["node_modules/*"]
-        },
-        "esModuleInterop": true
-    },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules"]
+        "target": "es6",
+        "typeRoots": ["src/@types"],
+        "types": ["node"],
+        "plugins": [
+            {
+                "name": "tslint-language-service",
+                "alwaysShowRuleFailuresAsWarnings": true,
+                "ignoreDefinitionFiles": true
+            }
+        ]
+    }
 }

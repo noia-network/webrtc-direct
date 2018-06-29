@@ -1,7 +1,7 @@
-import { EventEmitter } from "events";
-import { Statuses } from "./main";
+import * as EventEmitter from "events";
+import { Statuses } from "./index";
 
-export = class Channel extends EventEmitter {
+export class Channel extends EventEmitter {
     public id: string;
     public pc: any; // peer connection
     public status: Statuses;
@@ -25,4 +25,4 @@ export = class Channel extends EventEmitter {
         }
         return id;
     }
-};
+}

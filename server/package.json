@@ -1,15 +1,17 @@
 {
-    "name": "webrtc-direct-server",
+    "name": "@noia-network/webrtc-direct-server",
     "version": "0.1.0",
     "description": "",
     "main": "dist/main.js",
+    "types": "dist/index.d.ts",
     "scripts": {
         "pretest": "tsc -p . --noEmit",
         "test": "tslint --project . --config ./tslint.json && echo Successfully passed tslint test.",
         "build": "tsc",
         "watch": "tsc -w",
         "start": "npm run build && node ./dist/sample.js",
-        "dev": "npx nodemon"
+        "dev": "npx nodemon",
+        "prettier": "prettier \"src/**/*\" -l"
     },
     "keywords": [],
     "author": {
@@ -18,12 +20,17 @@
     "license": "LGPL-2.1",
     "devDependencies": {
         "nodemon": "^1.17.5",
+        "simplr-tslint": "^1.0.0-alpha.13",
         "ts-node": "^6.1.1",
         "tslint": "^5.10.0",
-        "typescript": "^2.9.1"
+        "tslint-language-service": "^0.9.9",
+        "typescript": "^2.9.2"
     },
     "dependencies": {
+        "@noia-network/node-contents-client": "^0.2.0",
+        "@types/body-parser": "^1.17.0",
         "@types/chalk": "^2.2.0",
+        "@types/dotenv": "^4.0.3",
         "@types/express": "^4.16.0",
         "@types/morgan": "^1.7.35",
         "@types/node": "^10.3.2",
@@ -33,8 +40,10 @@
         "dotenv": "^6.0.0",
         "express": "^4.16.3",
         "morgan": "^1.9.0",
-        "noia-node-contents-client": "git+https://github.com/noia-network/noia-node-contents-client.git",
         "q": "^1.5.1",
+        "save": "^2.3.2",
+        "tslib": "^1.9.3",
+        "winston": "^3.0.0",
         "wrtc": "^0.1.4"
     }
 }
