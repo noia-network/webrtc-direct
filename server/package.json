@@ -9,7 +9,7 @@
         "test": "tslint --project . --config ./tslint.json && echo Successfully passed tslint test.",
         "build": "tsc",
         "watch": "tsc -w",
-        "start": "npm run build && node ./dist/sample.js",
+        "demo-echo": "ts-node ./demo/echo.ts",
         "dev": "npx nodemon",
         "prettier": "prettier \"src/**/*\" -l"
     },

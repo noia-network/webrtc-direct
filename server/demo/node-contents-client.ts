@@ -1,14 +1,11 @@
 const ContentsClient = require("@noia-network/node-contents-client"); // tslint:disable-line
-import * as dotenv from "dotenv";
-import * as path from "path";
-import { Channel } from "./channel";
-import { WebRTCDirect } from "./index";
-import { logger } from "./logger";
+import { Channel } from "../src/channel";
+import { WebRTCDirect } from "../src/index";
+import { config } from "./common";
+import { logger } from "../src/logger";
 
-const dotenvConfig = dotenv.config({ path: path.resolve(process.cwd(), ".env") });
-const config = dotenvConfig.parsed;
-if (dotenvConfig.error || !config) {
-    throw new Error("could not read config file");
+if (!config) {
+    throw new Error("config not found");
 }
 
 const contentsClient = new ContentsClient(null, config.STORAGE_DIR);

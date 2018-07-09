@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Echo Client</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="webrtc-direct.min.js"></script>
+</head>
+
+<body>
+    <button onclick="connect()">Connect</button>
+    <button onclick="stop()">Close</button>
+    <br>
+    <input id="text-input" type="text">
+    <button onclick="send()">Send</button>
+    <br>
+    <textarea id="received-texts" cols=36 rows=10 readonly></textarea>
+</body>
+
+<script>
+    const address = "localhost:3000"
+    const client = new window.WebRTCDirect.Client(address);
+    client.on("connected", () => {
+        console.info("connected")
+    })
+    client.on("data", (data) => {
+        document.getElementById("received-texts").append(`Echo: ${data}\n`)
+    })
+    client.on("closed", () => {
+        console.info("closed")
+    })
+    client.on("error", (error) => {
+        console.error(error)
+    })
+    function connect() {
+        client.connect()
+    }
+    function stop() {
+        client.stop()
+    }
+    function send() {
+        const msg = document.getElementById("text-input").value
+        client.send(msg || " ")
+    }
+</script>
+
+</html>
