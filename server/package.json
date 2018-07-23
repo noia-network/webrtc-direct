@@ -6,11 +6,13 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "pretest": "tsc -p . --noEmit",
-        "test": "tslint --project . --config ./tslint.json && echo Successfully passed tslint test.",
+        "test": "npm run tslint && npm run jest",
+        "tslint": "tslint --project . --config ./tslint.json && echo Successfully passed tslint test.",
+        "jest": "jest",
         "build": "tsc",
         "watch": "tsc -w",
         "demo-echo": "ts-node ./demo/echo.ts",
-        "dev": "npx nodemon",
+        "dev": "nodemon",
         "prettier": "prettier \"src/**/*\" -l"
     },
     "keywords": [],
@@ -19,8 +21,11 @@
     },
     "license": "LGPL-2.1",
     "devDependencies": {
+        "@types/jest": "^23.1.5",
+        "jest": "^23.3.0",
         "nodemon": "^1.17.5",
         "simplr-tslint": "^1.0.0-alpha.13",
+        "ts-jest": "^23.0.0",
         "ts-node": "^6.1.1",
         "tslint": "^5.10.0",
         "tslint-language-service": "^0.9.9",
@@ -45,5 +50,20 @@
         "tslib": "^1.9.3",
         "winston": "^3.0.0",
         "wrtc": "^0.1.4"
+    },
+    "jest": {
+        "collectCoverage": true,
+        "transform": {
+            ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+        },
+        "testRegex": "/src/.*\\.(test|spec).(ts|tsx|js)$",
+        "coveragePathIgnorePatterns": [
+            "/node_modules/"
+        ],
+        "moduleFileExtensions": [
+            "ts",
+            "tsx",
+            "js"
+        ]
     }
 }

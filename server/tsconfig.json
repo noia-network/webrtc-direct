@@ -6,12 +6,11 @@
         "module": "commonjs",
         "moduleResolution": "node",
         "noEmitHelpers": true,
+        "importHelpers": true,
         "outDir": "dist",
         "rootDir": "src",
         "strict": true,
         "target": "es6",
-        "typeRoots": ["src/@types"],
-        "types": ["node"],
         "plugins": [
             {
                 "name": "tslint-language-service",

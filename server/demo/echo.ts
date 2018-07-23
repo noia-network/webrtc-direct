@@ -1,14 +1,12 @@
 import { Channel } from "../src/channel";
 import { WebRTCDirect } from "../src/index";
-import { config } from "./common";
+import { getConfig } from "./common";
 import { logger } from "../src/logger";
 
-if (!config) {
-    throw new Error("config not found");
-}
-
+const config = getConfig();
 const webRTCDirect = new WebRTCDirect(Number(config.CONTROL_PORT), Number(config.DATA_PORT), config.IP);
 webRTCDirect.on("connection", (channel: Channel) => {
+    // tslint:disable-next-line:no-any
     channel.on("data", (data: any) => {
         handleRequest(data, channel);
     });
@@ -22,5 +20,9 @@ webRTCDirect.on("connection", (channel: Channel) => {
 webRTCDirect.listen();
 
 function handleRequest(data: string, channel: Channel): void {
+    if (channel.dc == null) {
+        logger.warn("invalid channel.dc");
+        return;
+    }
     channel.dc.send(data);
 }

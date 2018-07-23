@@ -1,37 +1,56 @@
 declare module "wrtc" {
+    export interface RTCPeerConnectionIceEvent extends Event {
+        readonly candidate: IceCandidate;
+    }
+
     export interface IceCandidate {
-        sdpMLineIndex: any;
-        candidate: any;
+        sdpMLineIndex: number | null;
+        candidate: string | null;
     }
 
     export interface Description {}
 
-    export interface DataChannel {
-        onmessage: (event: object) => void;
+    export interface DataChannel extends EventTarget {
+        onmessage: (event: MessageEvent) => void;
+        onopen: (event: Event) => void;
+        send: (data: any) => void;
     }
 
     export class RTCSessionDescription {
-        constructor(desc: Description);
+        constructor(desc: RTCSessionDescriptionInit);
     }
 
-    export class RTCPeerConnection {
+    interface handleErrorCallback {
+        (error: ErrorEvent): void;
+    }
+
+    interface setLocalDescriptionFn {
+        (rtcSD: RTCSessionDescription, successCallback: () => void, handleError: handleErrorCallback): void;
+    }
+
+    export class RTCPeerConnection extends EventTarget {
         signalingState: string;
         iceConnectionState: string;
         iceGatheringState: string;
         connectionState: string;
+        localDescription: RTCSessionDescriptionInit;
+        remoteDescription: RTCSessionDescriptionInit;
 
-        onerror: (error: object) => void;
-        onnegotationneeded: (error: object) => void;
-        onicecandidateerror: (error: object) => void;
-        onsignalingstatechange: (error: object) => void;
-        oniceconnectionstatechange: (error: object) => void;
-        onicegatheringstatechange: (error: object) => void;
-        onconnectionstatechange: (error: object) => void;
-        onicecandidate: (candidate: IceCandidate) => void;
+        onerror: (event: ErrorEvent) => void;
+        onnegotationneeded: (event: Event) => void;
+        onicecandidateerror: (event: Event) => void;
+        onsignalingstatechange: (event: Event) => void;
+        oniceconnectionstatechange: (event: Event) => void;
+        onicegatheringstatechange: (event: Event) => void;
+        onconnectionstatechange: (event: Event) => void;
+        onicecandidate: (candidate: RTCPeerConnectionIceEvent) => void;
 
-        setLocalDescription: (rtcSD: RTCSessionDescription, setRemoteDescription: Function, handleError: Function) => void;
-        createOffer: (setLocalDescription: Function, handleError: Function) => void;
+        addIceCandidate: (candidate: RTCIceCandidate) => void;
+        setRemoteDescription: (rtcSD: RTCSessionDescription, successCallback: () => void, handleError: handleErrorCallback) => void;
+        setLocalDescription: setLocalDescriptionFn;
+        createOffer: (setLocalDescription: setLocalDescriptionFn, handleError: handleErrorCallback) => void;
         createDataChannel: (name: string) => DataChannel;
+        close: () => void;
     }
 
     export class RTCIceCandidate {

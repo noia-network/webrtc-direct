@@ -1,19 +1,17 @@
 const ContentsClient = require("@noia-network/node-contents-client"); // tslint:disable-line
 import { Channel } from "../src/channel";
 import { WebRTCDirect } from "../src/index";
-import { config } from "./common";
+import { getConfig } from "./common";
 import { logger } from "../src/logger";
 
-if (!config) {
-    throw new Error("config not found");
-}
-
+const config = getConfig();
 const contentsClient = new ContentsClient(null, config.STORAGE_DIR);
 registerContentsClientListeners();
 contentsClient.start();
 
 const webRTCDirect = new WebRTCDirect(Number(config.CONTROL_PORT), Number(config.DATA_PORT), config.IP);
 webRTCDirect.on("connection", (channel: Channel) => {
+    // tslint:disable-next-line:no-any
     channel.on("data", (data: any) => {
         handleRequest(data, channel);
     });
@@ -52,6 +50,7 @@ function handleRequest(data: string, channel: Channel): void {
     const length = params.length;
     const infoHash = params.infoHash;
 
+    // TODO: handle bad input.
     if (typeof piece === "undefined" || typeof offset === "undefined" || typeof infoHash === "undefined") {
         console.error(`bad request infoHash=${infoHash} index=${piece} offset=${offset} length=${length}`);
         return;
@@ -66,9 +65,14 @@ function handleRequest(data: string, channel: Channel): void {
         return;
     }
 
+    // tslint:disable-next-line:no-any
     content.getResponseBuffer(piece, offset, length, (resBuff: any) => {
         logger.info(`response infoHash=${infoHash} index=${piece} offset=${offset} length=${resBuff.length}`);
         try {
+            if (channel.dc == null) {
+                logger.warn("invalid channel.dc");
+                return;
+            }
             channel.dc.send(resBuff);
             content.emit("uploaded", resBuff.length);
         } catch (e) {

@@ -22,13 +22,6 @@ export enum Statuses {
 }
 
 export class WebRTCDirect extends EventEmitter {
-    private app: express.Express = express();
-    private channels: { [name: string]: Channel } = {};
-    private server: http.Server = http.createServer(this.app);
-    private controlIp?: string;
-    private controlPort: number;
-    private udpProxy: UdpProxy;
-
     constructor(controlPort: number, dataPort: number, controlIp?: string) {
         super();
 
@@ -42,38 +35,105 @@ export class WebRTCDirect extends EventEmitter {
         this.app.post("/channels", this.postChannels.bind(this));
         this.app.post("/channels/:channelId/answer", this.postChannelAnswer.bind(this));
         this.app.post("/channels/:channelId/close", this.postChannelClose.bind(this));
+
+        this.server.on("error", (err: NodeJS.ErrnoException) => {
+            logger.error(`WebRTCDirect HTTP error`);
+            this.emit("error", err);
+        });
+        this.server.on("close", () => {
+            logger.info("WebRTCDirect HTTP closed");
+        });
+
+        this.udpProxy.on("error", (err: NodeJS.ErrnoException) => {
+            logger.error("WebRTCDirect UDP error");
+            this.emit("error", err);
+        });
     }
 
-    public listen(): void {
-        this.server.listen(this.controlPort, this.controlIp, () => {
-            logger.info(chalk.bgGreen(`Listening for HTTP requests on port ${this.controlPort}`));
+    private app: express.Express = express();
+    private channels: { [name: string]: Channel } = {};
+    private controlIp?: string;
+    private controlPort: number;
+    private udpProxy: UdpProxy;
+    public server: http.Server = http.createServer(this.app);
+
+    public async listen(): Promise<void> {
+        return new Promise<void>(resolve => {
+            this.udpProxy
+                .listen()
+                .then(async () => this.listenInternal())
+                .then(() => {
+                    this.emit("listening");
+                    resolve();
+                    logger.info(chalk.bgGreen(`Listening for HTTP requests on port ${this.controlPort}`));
+                });
+        });
+    }
+
+    private async listenInternal(): Promise<void> {
+        return new Promise<void>(resolve => {
+            this.server.listen(this.controlPort, this.controlIp, () => {
+                resolve();
+            });
+        });
+    }
+
+    public async close(): Promise<void> {
+        await this.closeInternal();
+        await this.udpProxy.close();
+        this.emit("closed");
+        logger.info(chalk.bgGreen(`Closed listening for WebRTC requests on port ${this.controlPort}`));
+    }
+
+    private async closeInternal(): Promise<void> {
+        return new Promise<void>(resolve => {
+            if (this.server.listening) {
+                this.server.close(() => {
+                    resolve();
+                });
+            } else {
+                if (this.udpProxy.listening) {
+                    this.once("listening", () => {
+                        this.server.close(() => {
+                            resolve();
+                        });
+                    });
+                } else {
+                    resolve();
+                }
+            }
         });
     }
 
     private postChannels(req: express.Request, res: express.Response): void {
-        const isUDP = (candidate: any): boolean => candidate.includes("udp");
+        const isUDP = (candidate: wrtc.IceCandidate): boolean => {
+            if (typeof candidate.candidate !== "string") {
+                throw new Error("invalid candidate");
+            }
+            return candidate.candidate.includes("udp");
+        };
 
         const pc1 = new wrtc.RTCPeerConnection();
 
-        pc1.onerror = (error: any) => {
-            logger.info(chalk.bgRed("error"), error);
+        pc1.onerror = (error: ErrorEvent) => {
+            logger.error(chalk.bgRed("error"), error);
         };
-        pc1.onnegotationneeded = (event: any) => {
+        pc1.onnegotationneeded = (event: Event) => {
             logger.info(chalk.bgYellow(`negotation-needed`), event);
         };
-        pc1.onicecandidateerror = (event: any) => {
+        pc1.onicecandidateerror = (event: Event) => {
             logger.info(chalk.bgYellow(`ice-candidate-error`), event);
         };
-        pc1.onsignalingstatechange = (event: any) => {
+        pc1.onsignalingstatechange = (event: Event) => {
             logger.info(chalk.bgYellow(`signaling-state`), chalk.yellowBright(pc1.signalingState));
         };
-        pc1.oniceconnectionstatechange = (event: any) => {
+        pc1.oniceconnectionstatechange = (event: Event) => {
             logger.info(chalk.bgYellow(`ice-connection-state`), chalk.yellowBright(pc1.iceConnectionState));
         };
-        pc1.onicegatheringstatechange = (event: any) => {
+        pc1.onicegatheringstatechange = (event: Event) => {
             logger.info(chalk.bgYellow(`ice-gathering-state`), chalk.yellowBright(pc1.iceGatheringState));
         };
-        pc1.onconnectionstatechange = (event: any) => {
+        pc1.onconnectionstatechange = (event: Event) => {
             logger.info(chalk.bgYellow(`connection-state`), chalk.yellowBright(pc1.connectionState));
         };
 
@@ -82,32 +142,33 @@ export class WebRTCDirect extends EventEmitter {
 
         const iceCandidates: wrtc.IceCandidate[] = [];
         const iceCandidateDeferred = Q.defer();
-        let localDescription: any;
+        let localDescription: RTCSessionDescriptionInit;
         const localDescriptionDeferred = Q.defer();
 
         function mapPorts(iceCandidate: wrtc.IceCandidate): wrtc.IceCandidate {
-            const cs = iceCandidate.candidate.split(" ");
+            if (iceCandidate.candidate == null) {
+                throw new Error("invalid iceCandidate");
+            }
+            const cs: string[] = iceCandidate.candidate.split(" ");
             logger.info(chalk.yellowBright(`Candidate mapping: ${cs[5]}->${CONTROL_PORT}`));
             channel.localAddress = `${cs[4]}:${cs[5]}`;
-            cs[5] = CONTROL_PORT;
+            cs[5] = CONTROL_PORT.toString();
             iceCandidate.candidate = cs.join(" ");
             return iceCandidate;
         }
 
-        pc1.onicecandidate = (candidate: any) => {
-            if (!candidate.candidate) {
+        pc1.onicecandidate = (candidate: wrtc.RTCPeerConnectionIceEvent) => {
+            if (candidate.candidate == null) {
                 iceCandidateDeferred.resolve();
             } else {
                 const iceCandidate: wrtc.IceCandidate = {
                     sdpMLineIndex: candidate.candidate.sdpMLineIndex,
                     candidate: candidate.candidate.candidate
                 };
-                if (isUDP(candidate.candidate.candidate)) {
+                if (isUDP(iceCandidate)) {
                     logger.info(chalk.cyanBright(`${channel.id} pc1.onicecandidate (before)`), iceCandidate);
                     if (DO_MAPPING) {
                         mapPorts(iceCandidate);
-                    }
-                    if (DO_MAPPING) {
                         logger.info(chalk.cyanBright(`${channel.id} pc1.onicecandidate (after)`), iceCandidate);
                     }
                     iceCandidates.push(iceCandidate);
@@ -120,7 +181,7 @@ export class WebRTCDirect extends EventEmitter {
             logger.info(chalk.greenBright(`${channel.id} pc1: data channel open`));
             this.emit("connection", channel);
             channel.status = Statuses.CHANNEL_ESTABLISHED;
-            dc1.onmessage = (event: any) => {
+            dc1.onmessage = (event: MessageEvent) => {
                 channel.emit("data", event.data);
             };
         };
@@ -136,14 +197,14 @@ export class WebRTCDirect extends EventEmitter {
             });
         });
 
-        function setRemoteDescription2(desc: any): void {
+        function setRemoteDescription2(desc: RTCSessionDescriptionInit): void {
             setTimeout(() => {
                 localDescription = desc;
                 localDescriptionDeferred.resolve();
             }, DO_TIMEOUT ? 10000 : 0);
         }
 
-        function setLocalDescription1(desc: any): void {
+        function setLocalDescription1(desc: RTCSessionDescriptionInit): void {
             logger.info(chalk.cyanBright(`${channel.id} pc1: set local description:`), desc.sdp);
             pc1.setLocalDescription(new wrtc.RTCSessionDescription(desc), setRemoteDescription2.bind(null, desc), handleError);
         }
@@ -153,7 +214,7 @@ export class WebRTCDirect extends EventEmitter {
             pc1.createOffer(setLocalDescription1, handleError);
         }
 
-        function handleError(error: any): void {
+        function handleError(error: ErrorEvent): void {
             res.status(500).json({
                 success: false,
                 error: error
@@ -163,7 +224,7 @@ export class WebRTCDirect extends EventEmitter {
 
     private postChannelAnswer(req: express.Request, res: express.Response): void {
         const channel = this.channelCheck(req, res);
-        if (!channel) {
+        if (channel == null) {
             return;
         }
 
@@ -174,8 +235,8 @@ export class WebRTCDirect extends EventEmitter {
             });
         }
 
-        function setRemoteDescription1(desc: any): void {
-            if (!channel) {
+        function setRemoteDescription1(desc: RTCSessionDescriptionInit): void {
+            if (channel == null) {
                 throw new Error("channel null");
             }
             logger.info(chalk.magentaBright(`${channel.id} pc1: set remote description`), desc.sdp);
@@ -185,7 +246,7 @@ export class WebRTCDirect extends EventEmitter {
                     res.status(200).json({
                         success: true
                     });
-                    if (!channel) {
+                    if (channel == null) {
                         throw new Error("channel shouldn't be destroyed!");
                     }
                     logger.info(chalk.cyanBright("channel.pc.localDescription.sdp"), channel.pc.localDescription.sdp);
@@ -196,7 +257,7 @@ export class WebRTCDirect extends EventEmitter {
             channel.status = Statuses.ANSWERED;
         }
 
-        function handleError(error: any): void {
+        function handleError(error: ErrorEvent): void {
             res.status(500).json({
                 success: false,
                 error: error
@@ -208,26 +269,29 @@ export class WebRTCDirect extends EventEmitter {
     }
 
     private mapPortsFromBrowser(req: express.Request, channel: Channel, iceCandidate: wrtc.IceCandidate): wrtc.IceCandidate {
-        const cs = iceCandidate.candidate.split(" ");
+        if (iceCandidate.candidate == null) {
+            throw new Error("invalid candidate");
+        }
+        const cs: string[] = iceCandidate.candidate.split(" ");
         logger.info(chalk.yellowBright(`Candidate mapping: ${cs[5]}->${CONTROL_PORT}`));
         channel.remoteAddress = `${req.headers["x-forwarded-for"] || req.connection.remoteAddress}:${cs[5]}`;
-        cs[5] = CONTROL_PORT;
+        cs[5] = CONTROL_PORT.toString();
         iceCandidate.candidate = cs.join(" ");
         return iceCandidate;
     }
 
     private addIceCandidates(req: express.Request, channel: Channel, iceCandidates: wrtc.IceCandidate[]): void {
-        if (!channel) {
+        if (channel == null) {
             throw new Error("channel null");
         }
         const channelId = channel.id;
         iceCandidates.forEach((iceCandidate: wrtc.IceCandidate) => {
             logger.info(chalk.cyanBright(`${channelId} pc1: adding ice candidate from browser`), iceCandidate);
-            if (!channel) {
+            if (channel == null) {
                 throw new Error("channel null");
             }
             iceCandidate = this.mapPortsFromBrowser(req, channel, iceCandidate);
-            if (!channel.localAddress || !channel.remoteAddress) {
+            if (channel.localAddress == null || channel.remoteAddress == null) {
                 throw new Error("localAddress or remoteAddress is null");
             }
             this.udpProxy.setMap(channel.localAddress, channel.remoteAddress);
@@ -237,7 +301,7 @@ export class WebRTCDirect extends EventEmitter {
 
     private channelCheck(req: express.Request, res: express.Response): undefined | Channel {
         const channelId = req.params.channelId;
-        if (!(channelId in this.channels)) {
+        if (channelId in this.channels == null) {
             res.status(404).json({
                 success: false,
                 reason: "channel not found"
@@ -249,7 +313,7 @@ export class WebRTCDirect extends EventEmitter {
 
     private postChannelClose(req: express.Request, res: express.Response): void {
         const channel = this.channelCheck(req, res);
-        if (!channel) {
+        if (channel == null) {
             return;
         }
         logger.info(chalk.redBright(`${channel.id} pc1: close`));
