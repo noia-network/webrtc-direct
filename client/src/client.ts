@@ -21,7 +21,7 @@ export class Client extends EventEmitter {
         this.iceCandidateMutexRelease = await this.iceCandidateMutex.acquire();
         const isUDP = (candidate: RTCIceCandidate) => {
             if (candidate.candidate) {
-                return candidate.candidate.includes("UDP");
+                return candidate.candidate.toUpperCase().includes("UDP");
             }
         };
 
