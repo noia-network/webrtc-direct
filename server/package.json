@@ -2,7 +2,7 @@
     "name": "@noia-network/webrtc-direct-server",
     "version": "0.1.0",
     "description": "",
-    "main": "dist/main.js",
+    "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
         "pretest": "tsc -p . --noEmit",

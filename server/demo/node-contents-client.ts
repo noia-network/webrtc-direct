@@ -1,6 +1,6 @@
 const ContentsClient = require("@noia-network/node-contents-client"); // tslint:disable-line
 import { Channel } from "../src/channel";
-import { WebRTCDirect } from "../src/index";
+import { WebRtcDirect } from "../src/index";
 import { getConfig } from "./common";
 import { logger } from "../src/logger";
 
@@ -9,8 +9,8 @@ const contentsClient = new ContentsClient(null, config.STORAGE_DIR);
 registerContentsClientListeners();
 contentsClient.start();
 
-const webRTCDirect = new WebRTCDirect(Number(config.CONTROL_PORT), Number(config.DATA_PORT), config.IP);
-webRTCDirect.on("connection", (channel: Channel) => {
+const webRtcDirect = new WebRtcDirect(Number(config.CONTROL_PORT), Number(config.DATA_PORT), config.IP);
+webRtcDirect.on("connection", (channel: Channel) => {
     // tslint:disable-next-line:no-any
     channel.on("data", (data: any) => {
         handleRequest(data, channel);
@@ -22,7 +22,7 @@ webRTCDirect.on("connection", (channel: Channel) => {
         logger.info(`${channel.id} closed`);
     });
 });
-webRTCDirect.listen();
+webRtcDirect.listen();
 
 function registerContentsClientListeners(): void {
     contentsClient.on("seeding", (infoHashes: string[]) => {

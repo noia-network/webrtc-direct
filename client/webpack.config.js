@@ -6,7 +6,7 @@ module.exports = (env, argv) => ({
     },
     output: {
         filename: argv.mode === "production" ? "webrtc-direct.min.js" : "webrtc-direct.js",
-        library: "WebRTCDirect",
+        library: "WebRtcDirect",
         libraryTarget: "umd",
         path: path.resolve(__dirname, "dist"),
         umdNamedDefine: true

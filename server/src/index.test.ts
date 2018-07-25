@@ -1,4 +1,4 @@
-import { WebRTCDirect } from "./index";
+import { WebRtcDirect } from "./index";
 
 const CONTROL_PORT = 12345;
 const DATA_PORT = 12346;
@@ -7,29 +7,46 @@ it("listens and closes", done => {
     const listeningFn = jest.fn();
     expect.assertions(4);
 
-    const webRTCDirect = new WebRTCDirect(CONTROL_PORT, DATA_PORT);
-    expect(webRTCDirect.server.listening).toBe(false);
-    webRTCDirect.on("listening", () => {
+    const webRtcDirect = new WebRtcDirect(CONTROL_PORT, DATA_PORT);
+    expect(webRtcDirect.server.listening).toBe(false);
+    webRtcDirect.on("listening", () => {
         listeningFn();
-        expect(webRTCDirect.server.listening).toBe(true);
-        webRTCDirect.close();
+        expect(webRtcDirect.server.listening).toBe(true);
+        webRtcDirect.close();
     });
-    webRTCDirect.on("closed", () => {
-        expect(webRTCDirect.server.listening).toBe(false);
+    webRtcDirect.on("closed", () => {
+        expect(webRtcDirect.server.listening).toBe(false);
         expect(listeningFn).toHaveBeenCalledTimes(1);
         done();
     });
-    webRTCDirect.listen();
+    webRtcDirect.listen();
 });
 
 it("listens and closes (promise)", async done => {
     try {
-        const webRTCDirect = new WebRTCDirect(CONTROL_PORT, DATA_PORT);
-        expect(webRTCDirect.server.listening).toBe(false);
-        await webRTCDirect.listen();
-        expect(webRTCDirect.server.listening).toBe(true);
-        await webRTCDirect.close();
-        expect(webRTCDirect.server.listening).toBe(false);
+        const webRtcDirect = new WebRtcDirect(CONTROL_PORT, DATA_PORT);
+        expect(webRtcDirect.server.listening).toBe(false);
+        await webRtcDirect.listen();
+        expect(webRtcDirect.server.listening).toBe(true);
+        await webRtcDirect.close();
+        expect(webRtcDirect.server.listening).toBe(false);
+        done();
+    } catch (error) {
+        done.fail(error);
+    }
+});
+
+it("listens and closes 2 times (promise)", async done => {
+    try {
+        const webRtcDirect = new WebRtcDirect(CONTROL_PORT, DATA_PORT);
+        expect(webRtcDirect.server.listening).toBe(false);
+        await webRtcDirect.listen();
+        expect(webRtcDirect.server.listening).toBe(true);
+        await webRtcDirect.close();
+        expect(webRtcDirect.server.listening).toBe(false);
+        await webRtcDirect.listen();
+        expect(webRtcDirect.server.listening).toBe(true);
+        await webRtcDirect.close();
         done();
     } catch (error) {
         done.fail(error);
@@ -37,23 +54,23 @@ it("listens and closes (promise)", async done => {
 });
 
 it("emits error if port is in use", done => {
-    const webRTCDirect1Error1 = jest.fn();
+    const webRtcDirect1Error1 = jest.fn();
     expect.assertions(1);
 
-    const webRTCDirect1 = new WebRTCDirect(CONTROL_PORT, DATA_PORT);
-    webRTCDirect1.on("error", () => {
-        webRTCDirect1Error1();
+    const webRtcDirect1 = new WebRtcDirect(CONTROL_PORT, DATA_PORT);
+    webRtcDirect1.on("error", () => {
+        webRtcDirect1Error1();
     });
-    webRTCDirect1.listen();
+    webRtcDirect1.listen();
 
-    const webRTCDirect2 = new WebRTCDirect(CONTROL_PORT, DATA_PORT);
-    webRTCDirect2.on("error", (error: NodeJS.ErrnoException) => {
+    const webRtcDirect2 = new WebRtcDirect(CONTROL_PORT, DATA_PORT);
+    webRtcDirect2.on("error", (error: NodeJS.ErrnoException) => {
         if (error.code === "EADDRINUSE") {
-            Promise.all([webRTCDirect1.close(), webRTCDirect2.close()]).then(() => {
-                expect(webRTCDirect1Error1).not.toBeCalled();
+            Promise.all([webRtcDirect1.close(), webRtcDirect2.close()]).then(() => {
+                expect(webRtcDirect1Error1).not.toBeCalled();
                 done();
             });
         }
     });
-    webRTCDirect2.listen();
+    webRtcDirect2.listen();
 });

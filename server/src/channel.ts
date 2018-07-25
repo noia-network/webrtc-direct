@@ -1,4 +1,4 @@
-import * as EventEmitter from "events";
+import { EventEmitter } from "events";
 import * as wrtc from "wrtc";
 import { Statuses } from "./index";
 
@@ -7,7 +7,7 @@ export class Channel extends EventEmitter {
         super();
 
         this.id = this.generateId();
-        this.status = Statuses.WAITING_FOR_ANSWER;
+        this.status = Statuses.WaitingForAnswer;
         this.pc = pc;
     }
 
