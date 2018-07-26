@@ -1,20 +1,22 @@
 import { EventEmitter } from "events";
-import { Statuses } from "./main";
+import * as wrtc from "wrtc";
+import { Statuses } from "./index";
 
-export = class Channel extends EventEmitter {
-    public id: string;
-    public pc: any; // peer connection
-    public status: Statuses;
-    public dc: any; // data channel
-    public localAddress?: string;
-    public remoteAddress?: string;
-    constructor(pc: any) {
+export class Channel extends EventEmitter {
+    constructor(pc: wrtc.RTCPeerConnection) {
         super();
 
         this.id = this.generateId();
-        this.status = Statuses.WAITING_FOR_ANSWER;
+        this.status = Statuses.WaitingForAnswer;
         this.pc = pc;
     }
+
+    public id: string;
+    public pc: wrtc.RTCPeerConnection;
+    public status: Statuses;
+    public dc: wrtc.DataChannel | undefined;
+    public localAddress?: string;
+    public remoteAddress?: string;
 
     private generateId(): string {
         const possible: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -25,4 +27,4 @@ export = class Channel extends EventEmitter {
         }
         return id;
     }
-};
+}
