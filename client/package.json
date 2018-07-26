@@ -32,5 +32,9 @@
         "tslib": "^1.9.3",
         "webrtc-adapter": "^6.2.1",
         "whatwg-fetch": "^2.0.4"
-    }
+    },
+    "files": [
+        "dist",
+        "**/*.md"
+    ]
 }

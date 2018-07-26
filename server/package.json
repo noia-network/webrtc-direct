@@ -51,6 +51,10 @@
         "winston": "^3.0.0",
         "wrtc": "^0.1.4"
     },
+    "files": [
+        "dist",
+        "**/*.md"
+    ],
     "jest": {
         "collectCoverage": true,
         "transform": {
