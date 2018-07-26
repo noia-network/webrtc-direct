@@ -4,6 +4,7 @@ import * as express from "express";
 import * as http from "http";
 import * as morgan from "morgan";
 import * as wrtc from "wrtc";
+import { RTCPeerConnectionState } from "wrtc";
 import chalk from "chalk";
 import { Channel } from "./channel";
 import { EventEmitter } from "events";
@@ -104,6 +105,7 @@ export class WebRtcDirect extends EventEmitter {
             if (typeof candidate.candidate !== "string") {
                 throw new Error("invalid candidate");
             }
+
             return candidate.candidate.includes("udp");
         };
 
@@ -119,16 +121,25 @@ export class WebRtcDirect extends EventEmitter {
             logger.error(`${LOG_PREFIX} ${chalk.yellow("ice-candidate-error")}`, event);
         };
         pc1.onsignalingstatechange = (event: Event) => {
-            logger.verbose(`${LOG_PREFIX} ${chalk.yellow("signaling-state")}`, chalk.yellowBright(pc1.signalingState));
+            logger.verbose(`${LOG_PREFIX} ${chalk.yellow("signaling-state")}: ${chalk.yellowBright(pc1.signalingState.toString())}`);
         };
         pc1.oniceconnectionstatechange = (event: Event) => {
-            logger.verbose(`${LOG_PREFIX} ${chalk.yellow("ice-connection-state")}`, chalk.yellowBright(pc1.iceConnectionState));
+            logger.verbose(
+                `${LOG_PREFIX} ${chalk.yellow("ice-connection-state")}: ${chalk.yellowBright(pc1.iceConnectionState.toString())}`
+            );
         };
         pc1.onicegatheringstatechange = (event: Event) => {
-            logger.verbose(`${LOG_PREFIX} ${chalk.yellow("ice-gathering-state")}`, chalk.yellowBright(pc1.iceGatheringState));
+            logger.verbose(`${LOG_PREFIX} ${chalk.yellow("ice-gathering-state")}: ${chalk.yellowBright(pc1.iceGatheringState.toString())}`);
         };
         pc1.onconnectionstatechange = (event: Event) => {
-            logger.verbose(`${LOG_PREFIX} ${chalk.yellow("connection-state")}`, chalk.yellowBright(pc1.connectionState));
+            logger.verbose(`${LOG_PREFIX} ${chalk.yellow("connection-state")}: ${chalk.yellowBright(pc1.connectionState.toString())}`);
+            if (pc1.connectionState === RTCPeerConnectionState.Failed) {
+                for (const [, ch] of Object.entries(this.channels)) {
+                    if (ch.pc === pc1) {
+                        this.channelClose(ch);
+                    }
+                }
+            }
         };
 
         const channel = new Channel(pc1);
@@ -146,6 +157,7 @@ export class WebRtcDirect extends EventEmitter {
             if (iceCandidate.candidate == null) {
                 throw new Error("invalid iceCandidate");
             }
+
             const cs: string[] = iceCandidate.candidate.split(" ");
             channel.localAddress = `${cs[4]}:${cs[5]}`;
             cs[5] = dataPort.toString();
@@ -235,6 +247,7 @@ export class WebRtcDirect extends EventEmitter {
             if (channel == null) {
                 throw new Error("channel null");
             }
+
             logger.verbose(`${LOG_PREFIX} ${chalk.magentaBright(`${channel.id} pc1: set remote description`)}`, desc.sdp);
             channel.pc.setRemoteDescription(
                 new wrtc.RTCSessionDescription(desc),
@@ -274,10 +287,12 @@ export class WebRtcDirect extends EventEmitter {
         if (iceCandidate.candidate == null) {
             throw new Error("invalid candidate");
         }
+
         const cs: string[] = iceCandidate.candidate.split(" ");
         channel.remoteAddress = `${req.headers["x-forwarded-for"] || req.connection.remoteAddress}:${cs[5]}`;
         cs[5] = this.dataPort.toString();
         iceCandidate.candidate = cs.join(" ");
+
         return iceCandidate;
     }
 
@@ -285,6 +300,7 @@ export class WebRtcDirect extends EventEmitter {
         if (channel == null) {
             throw new Error("channel null");
         }
+
         const channelId = channel.id;
         iceCandidates.forEach((iceCandidate: wrtc.IceCandidate) => {
             logger.verbose(`${LOG_PREFIX} ${chalk.cyanBright(`${channelId} pc1: adding ice candidate from browser`)}`, iceCandidate);
@@ -309,6 +325,7 @@ export class WebRtcDirect extends EventEmitter {
             });
             return undefined;
         }
+
         return this.channels[channelId];
     }
 
@@ -318,11 +335,23 @@ export class WebRtcDirect extends EventEmitter {
             return;
         }
         logger.info(`${LOG_PREFIX} ${chalk.greenBright(`${channel.id} pc1: closed`)}`);
-        channel.pc.close();
-        channel.emit("closed");
-        delete this.channels[channel.id];
+        this.channelClose(channel);
         res.status(200).send({
             success: true
         });
+    }
+
+    /**
+     * Close data channel and unset UDP ports mapping.
+     */
+    private channelClose(channel: Channel): void {
+        if (channel.localAddress == null || channel.remoteAddress == null) {
+            throw new Error("localAddress or remoteAddress cannot be invalid!");
+        }
+
+        channel.pc.close();
+        this.udpProxy.unsetMap(channel.localAddress, channel.remoteAddress);
+        delete this.channels[channel.id];
+        channel.emit("closed");
     }
 }

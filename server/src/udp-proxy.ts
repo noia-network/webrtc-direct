@@ -23,6 +23,7 @@ export class UdpProxy extends EventEmitter {
         if (this.listening) {
             throw new Error("UDP proxy is already listening.");
         }
+
         return new Promise<void>(resolve => {
             try {
                 this.server = dgram.createSocket("udp4");
@@ -44,6 +45,7 @@ export class UdpProxy extends EventEmitter {
             logger.warn(`${LOG_PREFIX} UDP proxy socket is already closed.`);
             return;
         }
+
         return new Promise<void>(resolve => {
             this.portsMap.clear();
             if (this.server != null && this.listening === true) {
@@ -60,15 +62,22 @@ export class UdpProxy extends EventEmitter {
     }
 
     public setMap(addressA: string, addressB: string): void {
-        logger.info(`${LOG_PREFIX} map ${addressA}<->${addressB}`);
+        logger.verbose(`${LOG_PREFIX} set map ${addressA}<->${addressB}`);
         this.portsMap.set(addressA, addressB);
         this.portsMap.set(addressB, addressA);
+    }
+
+    public unsetMap(addressA: string, addressB: string): void {
+        logger.verbose(`${LOG_PREFIX} unset map ${addressA}<->${addressB}`);
+        this.portsMap.delete(addressA);
+        this.portsMap.delete(addressB);
     }
 
     private registerListeners(): void {
         if (this.server == null) {
             throw new Error("Cannot add listeners on invalid server.");
         }
+
         this.server.on("error", (err: NodeJS.ErrnoException) => {
             logger.error(`${LOG_PREFIX} server error:\n${err.stack}`);
             this.emit("error", err);
@@ -82,7 +91,7 @@ export class UdpProxy extends EventEmitter {
             const recPort = rinfo.port;
             const des = this.portsMap.get(`${rinfo.address}:${rinfo.port}`);
             if (des == null) {
-                return logger.warn(`${LOG_PREFIX} ${chalk.red("No mapping found")} for ${rinfo.address}:${rinfo.port}`);
+                return logger.verbose(`${LOG_PREFIX} ${chalk.red("No mapping found")} for ${rinfo.address}:${rinfo.port}`);
             }
             const destIp = des.split(":")[0];
             const destPort = Number(des.split(":")[1]);

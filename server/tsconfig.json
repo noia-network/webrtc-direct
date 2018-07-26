@@ -4,6 +4,7 @@
         "inlineSourceMap": true,
         "inlineSources": true,
         "module": "commonjs",
+        "lib": ["dom", "es2017"],
         "moduleResolution": "node",
         "noEmitHelpers": true,
         "importHelpers": true,
