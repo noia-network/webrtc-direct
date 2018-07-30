@@ -1,6 +1,6 @@
 {
     "name": "@noia-network/webrtc-direct-api-proxy",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -47,6 +47,7 @@
         "dotenv": "^6.0.0",
         "express": "^4.16.3",
         "morgan": "^1.9.0",
+        "request": "^2.87.0",
         "request-promise-native": "^1.0.5",
         "save": "^2.3.2",
         "tslib": "^1.9.3",
