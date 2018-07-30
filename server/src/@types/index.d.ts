@@ -1,4 +1,38 @@
 declare module "wrtc" {
+    export const enum RTCSignalingState {
+        Stable = "stable",
+        HaveLocalOffer = "have-local-offer",
+        HaveRemoteOffer = "have-remote-offer",
+        HaveLocalPranswer = "have-local-pranswer",
+        HaveRemotePranswer = "have-remote-pranswer",
+        Closed = "closed"
+    }
+
+    export const enum RTCIceConnectionState {
+        New = "new",
+        Checking = "checking",
+        Connected = "connected",
+        Completed = "completed",
+        Disconnected = "disconnected",
+        Failed = "failed",
+        Closed = "closed"
+    }
+
+    export const enum RTCIceGatheringState {
+        New = "new",
+        Hathering = "gathering",
+        Complete = "complete"
+    }
+
+    export const enum RTCPeerConnectionState {
+        "New" = "new",
+        "Connecting" = "connecting",
+        "Connected" = "connected",
+        "Disconnected" = "disconnected",
+        "Failed" = "failed",
+        "Closed" = "closed"
+    }
+
     export interface RTCPeerConnectionIceEvent extends Event {
         readonly candidate: IceCandidate;
     }
@@ -29,10 +63,10 @@ declare module "wrtc" {
     }
 
     export class RTCPeerConnection extends EventTarget {
-        signalingState: string;
-        iceConnectionState: string;
-        iceGatheringState: string;
-        connectionState: string;
+        signalingState: RTCSignalingState;
+        iceConnectionState: RTCIceConnectionState;
+        iceGatheringState: RTCIceGatheringState;
+        connectionState: RTCPeerConnectionState;
         localDescription: RTCSessionDescriptionInit;
         remoteDescription: RTCSessionDescriptionInit;
 

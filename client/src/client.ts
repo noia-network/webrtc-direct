@@ -3,8 +3,12 @@ import { EventEmitter } from "events";
 import { Mutex, MutexInterface } from "async-mutex";
 import { debug } from "./debug";
 
+interface Options {
+    proxyAddress?: string;
+}
+
 export class Client extends EventEmitter {
-    constructor(private readonly address: string) {
+    constructor(private readonly address: string, private readonly opts: Options = {}) {
         super();
 
         this.iceCandidates = [];
@@ -18,6 +22,11 @@ export class Client extends EventEmitter {
     private pc: RTCPeerConnection | undefined;
 
     public async connect(): Promise<void> {
+        if (this.pc != null && this.pc.iceGatheringState !== "complete") {
+            console.warn("ICE gathering state is not completed, skipping new connection request.");
+            return;
+        }
+
         this.iceCandidateMutexRelease = await this.iceCandidateMutex.acquire();
         const isUDP = (candidate: RTCIceCandidate) => {
             if (candidate.candidate) {
@@ -91,11 +100,9 @@ export class Client extends EventEmitter {
         };
 
         try {
-            const result = await fetch(`http://${this.address}/channels`, {
+            const result = await fetch(`${this.getAddress()}/channels`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                }
+                headers: this.getHeaders()
             });
             const data: ChannelData = await result.json();
             debug.info("connect", data);
@@ -133,11 +140,9 @@ export class Client extends EventEmitter {
         }
 
         try {
-            const result = await fetch(`http://${this.address}/channels/${this.channelData.channel_id}/close`, {
+            const result = await fetch(`${this.getAddress()}/channels/${this.channelData.channel_id}/close`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                }
+                headers: this.getHeaders()
             });
             const resultJson = await result.json();
 
@@ -150,6 +155,30 @@ export class Client extends EventEmitter {
         } catch (error) {
             this.emit("error", error);
         }
+    }
+
+    /**
+     *  If proxy address is set in options, use it.
+     */
+    private getAddress(): string {
+        if (this.opts.proxyAddress != null) {
+            return this.opts.proxyAddress;
+        }
+
+        return this.address;
+    }
+
+    /**
+     * If proxy address is set in options, add additional headers.
+     */
+    private getHeaders(): { [name: string]: string } {
+        const headers: { [name: string]: string } = {
+            "Content-Type": "application/json"
+        };
+        if (this.opts.proxyAddress != null) {
+            headers["X-Forwarded-Host"] = this.address;
+        }
+        return headers;
     }
 
     private async setRemoteDescription1(desc: RTCSessionDescription): Promise<void> {
@@ -165,11 +194,9 @@ export class Client extends EventEmitter {
                 if (this.channelData == null) {
                     throw new Error("invalid channelData");
                 }
-                const result = await fetch(`http://${this.address}/channels/${this.channelData.channel_id}/answer`, {
+                const result = await fetch(`${this.getAddress()}/channels/${this.channelData.channel_id}/answer`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers: this.getHeaders(),
                     body: JSON.stringify({
                         answer: desc,
                         ice_candidates: this.iceCandidates
