@@ -54,9 +54,9 @@ export class WebRtcDirect extends EventEmitter {
     }
 
     private app: express.Express = express();
-    private channels: { [name: string]: Channel } = {};
     private udpProxy: UdpProxy;
-    public server: http.Server = http.createServer(this.app);
+    public readonly channels: { [name: string]: Channel } = {};
+    public readonly server: http.Server = http.createServer(this.app);
 
     public async listen(): Promise<void> {
         await this.udpProxy.listen();
