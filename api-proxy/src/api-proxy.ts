@@ -26,7 +26,7 @@ export class ApiProxy extends EventEmitter {
 
         this.controlPort = controlPort;
 
-        this.app.use(cors());
+        this.app.use(cors({ origin: "*" }));
         this.app.use(morgan("dev"));
         this.app.use(bodyParser.json());
         this.app.post("/channels", this.onPostRequest);
@@ -57,11 +57,14 @@ export class ApiProxy extends EventEmitter {
     private app: express.Express = express();
     public server: http.Server | https.Server =
         this.opts.ssl != null
-            ? https.createServer({
-                  key: fs.readFileSync(this.opts.ssl.key),
-                  cert: fs.readFileSync(this.opts.ssl.cert),
-                  ca: fs.readFileSync(this.opts.ssl.ca)
-              })
+            ? https.createServer(
+                  {
+                      key: fs.readFileSync(this.opts.ssl.key),
+                      cert: fs.readFileSync(this.opts.ssl.cert),
+                      ca: fs.readFileSync(this.opts.ssl.ca)
+                  },
+                  this.app
+              )
             : http.createServer(this.app);
 
     private onPostRequest: express.RequestHandler = (req, res) => {
