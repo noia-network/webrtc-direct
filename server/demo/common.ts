@@ -15,7 +15,7 @@ export function filterIp(channel: Channel): string {
     if (channel.remoteAddress == null) {
         throw new Error("remoteAddress cannot be invalid.");
     }
-    return channel.remoteAddress.split(":")[1];
+    return channel.remoteAddress.split(":")[0];
 }
 
 export function countChannels(channels: { [name: string]: Channel }): number {

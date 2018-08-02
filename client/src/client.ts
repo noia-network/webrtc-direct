@@ -87,6 +87,7 @@ export class Client extends EventEmitter {
 
         this.pc.ondatachannel = event => {
             this.dc = event.channel;
+            this.dc.binaryType = "arraybuffer";
             this.dc.onopen = () => {
                 debug.info("pc2: data channel open");
                 this.emit("connected");
