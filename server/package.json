@@ -1,6 +1,6 @@
 {
     "name": "@noia-network/webrtc-direct-server",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -49,7 +49,7 @@
         "save": "^2.3.2",
         "tslib": "^1.9.3",
         "winston": "^3.0.0",
-        "wrtc": "^0.1.4"
+        "wrtc": "^0.1.6"
     },
     "files": [
         "dist",
