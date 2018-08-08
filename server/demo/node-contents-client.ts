@@ -9,7 +9,7 @@ const contentsClient = new ContentsClient(null, config.STORAGE_DIR);
 registerContentsClientListeners();
 contentsClient.start();
 
-const webRtcDirect = new WebRtcDirect(Number(config.CONTROL_PORT), Number(config.DATA_PORT), config.IP);
+const webRtcDirect = new WebRtcDirect(Number(config.CONTROL_PORT), Number(config.DATA_PORT), config.CONTROL_IP, config.DATA_IP);
 webRtcDirect.on("connection", (channel: Channel) => {
     logger.info(`[${channel.id}] ip=${filterIp(channel)} connected, clients=${countChannels(webRtcDirect.channels)}`);
     // tslint:disable-next-line:no-any
