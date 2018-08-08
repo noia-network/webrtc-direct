@@ -2,3 +2,4 @@ STORAGE_DIR=/path/to/storage/dir
 CONTROL_PORT=control port
 CONTROL_IP=control IPv4
 DATA_PORT=data port
+DATA_IP=data ip

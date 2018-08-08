@@ -23,7 +23,12 @@ export enum Statuses {
 }
 
 export class WebRtcDirect extends EventEmitter {
-    constructor(private readonly controlPort: number, private readonly dataPort: number, private readonly controlIp: string = "0.0.0.0") {
+    constructor(
+        private readonly controlPort: number,
+        private readonly dataPort: number,
+        private readonly controlIp: string = "0.0.0.0",
+        private readonly dataIp?: string
+    ) {
         super();
 
         this.udpProxy = new UdpProxy(dataPort);
@@ -153,13 +158,16 @@ export class WebRtcDirect extends EventEmitter {
         /**
          * Split candidate string, change candidate port to data port and concatenate back to candidate string.
          */
-        function mapPorts(iceCandidate: wrtc.IceCandidate, dataPort: number): wrtc.IceCandidate {
+        function mapPorts(iceCandidate: wrtc.IceCandidate, dataPort: number, dataIp?: string): wrtc.IceCandidate {
             if (iceCandidate.candidate == null) {
                 throw new Error("invalid iceCandidate");
             }
 
             const cs: string[] = iceCandidate.candidate.split(" ");
             channel.localAddress = `${cs[4]}:${cs[5]}`;
+            if (dataIp != null) {
+                cs[4] = dataIp;
+            }
             cs[5] = dataPort.toString();
             iceCandidate.candidate = cs.join(" ");
             return iceCandidate;
@@ -176,7 +184,7 @@ export class WebRtcDirect extends EventEmitter {
                 if (isUDP(iceCandidate)) {
                     logger.verbose(`${LOG_PREFIX} ${chalk.cyanBright(`${channel.id} pc1.onicecandidate (before)`)}`, iceCandidate);
                     if (DO_MAPPING) {
-                        mapPorts(iceCandidate, this.dataPort);
+                        mapPorts(iceCandidate, this.dataPort, this.dataIp);
                         logger.verbose(`${LOG_PREFIX} ${chalk.cyanBright(`${channel.id} pc1.onicecandidate (after)`)}`, iceCandidate);
                     }
                     iceCandidates.push(iceCandidate);
