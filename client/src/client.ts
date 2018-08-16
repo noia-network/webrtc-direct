@@ -1,15 +1,28 @@
-import "whatwg-fetch";
+import * as getBrowserRtc from "get-browser-rtc";
+import fetch from "node-fetch";
 import { EventEmitter } from "events";
 import { Mutex, MutexInterface } from "async-mutex";
 import { debug } from "./debug";
 
 interface Options {
     proxyAddress?: string;
+    // TODO: fix any.
+    wrtc?: any;
 }
 
 export class Client extends EventEmitter {
     constructor(private readonly address: string, private readonly opts: Options = {}) {
         super();
+
+        this.wrtc = opts.wrtc && typeof opts.wrtc === "object" ? opts.wrtc : getBrowserRtc();
+
+        if (!this.wrtc) {
+            if (typeof window === "undefined") {
+                this.emit("error", "No WebRTC support: Specify `opts.wrtc` option in this environment");
+            } else {
+                this.emit("error", "No WebRTC support: Not a supported browser");
+            }
+        }
 
         this.iceCandidates = [];
     }
@@ -20,6 +33,8 @@ export class Client extends EventEmitter {
     private iceCandidateMutexRelease: MutexInterface.Releaser | undefined;
     private iceCandidates: RTCIceCandidate[];
     private pc: RTCPeerConnection | undefined;
+    // TODO: fix any.
+    private wrtc: any;
 
     public async connect(): Promise<void> {
         if (this.pc != null && this.pc.iceGatheringState !== "complete") {
@@ -34,7 +49,11 @@ export class Client extends EventEmitter {
             }
         };
 
-        this.pc = new RTCPeerConnection({});
+        this.pc = new this.wrtc.RTCPeerConnection({});
+
+        if (this.pc == null) {
+            throw new Error("pc is invalid");
+        }
 
         this.pc.onnegotiationneeded = (event: Event) => {
             debug.info("negotation-needed", event);
@@ -117,7 +136,7 @@ export class Client extends EventEmitter {
                 if (this.pc == null) {
                     throw new Error("invalid pc");
                 }
-                this.pc.addIceCandidate(new RTCIceCandidate(iceCandidate as RTCIceCandidateInit));
+                this.pc.addIceCandidate(new this.wrtc.RTCIceCandidate(iceCandidate as RTCIceCandidateInit));
             });
         } catch (error) {
             this.emit("error", error);
@@ -223,7 +242,7 @@ export class Client extends EventEmitter {
             throw new Error("invalid pc");
         }
         this.pc.setLocalDescription(
-            new RTCSessionDescription(desc) as RTCSessionDescriptionInit,
+            new this.wrtc.RTCSessionDescription(desc) as RTCSessionDescriptionInit,
             this.setRemoteDescription1.bind(this, desc),
             this.handleError.bind(this)
         );
@@ -249,7 +268,7 @@ export class Client extends EventEmitter {
             throw new Error("invalid pc");
         }
         this.pc.setRemoteDescription(
-            new RTCSessionDescription(desc) as RTCSessionDescriptionInit,
+            new this.wrtc.RTCSessionDescription(desc) as RTCSessionDescriptionInit,
             this.createAnswer2.bind(this),
             this.handleError.bind(this)
         );
