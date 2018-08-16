@@ -1,6 +1,6 @@
 {
     "name": "@noia-network/webrtc-direct-client",
-    "version": "0.2.8",
+    "version": "0.2.9",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "author": {
@@ -26,11 +26,13 @@
     "dependencies": {
         "@types/events": "^1.2.0",
         "@types/jquery": "^3.3.4",
+        "@types/node-fetch": "^2.1.2",
         "@types/webrtc": "0.0.23",
         "async-mutex": "^0.1.3",
+        "get-browser-rtc": "^1.0.2",
+        "node-fetch": "^2.2.0",
         "tslib": "^1.9.3",
-        "webrtc-adapter": "^6.2.1",
-        "whatwg-fetch": "^2.0.4"
+        "webrtc-adapter": "^6.2.1"
     },
     "files": [
         "dist",
