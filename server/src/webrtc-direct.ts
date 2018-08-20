@@ -241,6 +241,10 @@ export class WebRtcDirect extends EventEmitter {
     private postChannelAnswer(req: express.Request, res: express.Response): void {
         const channel = this.channelCheck(req, res);
         if (channel == null) {
+            res.status(404).json({
+                success: false,
+                reason: "channel does not exist"
+            });
             return;
         }
 
@@ -340,6 +344,10 @@ export class WebRtcDirect extends EventEmitter {
     private postChannelClose(req: express.Request, res: express.Response): void {
         const channel = this.channelCheck(req, res);
         if (channel == null) {
+            res.status(404).json({
+                success: false,
+                reason: "channel does not exist or already closed"
+            });
             return;
         }
         logger.info(`${LOG_PREFIX} ${chalk.greenBright(`${channel.id} pc1: closed`)}`);
