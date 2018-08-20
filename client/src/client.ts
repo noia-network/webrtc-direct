@@ -37,110 +37,114 @@ export class Client extends EventEmitter {
     private wrtc: any;
 
     public async connect(): Promise<void> {
-        if (this.pc != null && this.pc.iceGatheringState !== "complete") {
-            console.warn("ICE gathering state is not completed, skipping new connection request.");
-            return;
-        }
-
-        this.iceCandidateMutexRelease = await this.iceCandidateMutex.acquire();
-        const isUDP = (candidate: RTCIceCandidate) => {
-            if (candidate.candidate) {
-                return candidate.candidate.toUpperCase().includes("UDP");
-            }
-        };
-
-        this.pc = new this.wrtc.RTCPeerConnection({});
-
-        if (this.pc == null) {
-            throw new Error("pc is invalid");
-        }
-
-        this.pc.onnegotiationneeded = (event: Event) => {
-            debug.info("negotation-needed", event);
-        };
-        this.pc.onicecandidateerror = (event: Event) => {
-            debug.info("ice-candidate", event);
-        };
-        this.pc.onsignalingstatechange = event => {
-            if (this.pc == null) {
+        return new Promise<void>(async (resolve, reject) => {
+            if (this.pc != null && this.pc.iceGatheringState !== "complete") {
+                console.warn("ICE gathering state is not completed, skipping new connection request.");
                 return;
             }
-            debug.info("signaling-state", this.pc.signalingState);
-        };
-        this.pc.oniceconnectionstatechange = event => {
-            if (this.pc == null) {
-                return;
-            }
-            debug.info("ice-connection-state", this.pc.iceConnectionState);
-        };
-        this.pc.onicegatheringstatechange = event => {
-            if (this.pc == null) {
-                return;
-            }
-            debug.info("ice-gathering-state", this.pc.iceGatheringState);
-        };
-        this.pc.onconnectionstatechange = event => {
-            if (this.pc == null) {
-                return;
-            }
-            debug.info("connection-state", this.pc.connectionState);
-        };
 
-        this.pc.onicecandidate = (candidate: RTCPeerConnectionIceEvent): void => {
-            if (candidate.candidate == null) {
-                if (this.iceCandidateMutexRelease == null) {
-                    throw new Error("invalid iceCandidateMutexPromise");
+            this.iceCandidateMutexRelease = await this.iceCandidateMutex.acquire();
+            const isUDP = (candidate: RTCIceCandidate) => {
+                if (candidate.candidate) {
+                    return candidate.candidate.toUpperCase().includes("UDP");
                 }
-                this.iceCandidateMutexRelease();
-            } else {
-                const iceCandidate: RTCIceCandidate = candidate.candidate;
-                if (isUDP(iceCandidate)) {
+            };
+
+            this.pc = new this.wrtc.RTCPeerConnection({});
+
+            if (this.pc == null) {
+                throw new Error("pc is invalid");
+            }
+
+            this.pc.onnegotiationneeded = (event: Event) => {
+                debug.info("negotation-needed", event);
+            };
+            this.pc.onicecandidateerror = (event: Event) => {
+                debug.info("ice-candidate", event);
+            };
+            this.pc.onsignalingstatechange = event => {
+                if (this.pc == null) {
+                    return;
+                }
+                debug.info("signaling-state", this.pc.signalingState);
+            };
+            this.pc.oniceconnectionstatechange = event => {
+                if (this.pc == null) {
+                    return;
+                }
+                debug.info("ice-connection-state", this.pc.iceConnectionState);
+            };
+            this.pc.onicegatheringstatechange = event => {
+                if (this.pc == null) {
+                    return;
+                }
+                debug.info("ice-gathering-state", this.pc.iceGatheringState);
+            };
+            this.pc.onconnectionstatechange = event => {
+                if (this.pc == null) {
+                    return;
+                }
+                debug.info("connection-state", this.pc.connectionState);
+            };
+
+            this.pc.onicecandidate = (candidate: RTCPeerConnectionIceEvent): void => {
+                if (candidate.candidate == null) {
+                    if (this.iceCandidateMutexRelease == null) {
+                        throw new Error("invalid iceCandidateMutexPromise");
+                    }
+                    this.iceCandidateMutexRelease();
+                } else {
+                    const iceCandidate: RTCIceCandidate = candidate.candidate;
+                    if (isUDP(iceCandidate)) {
+                        if (this.channelData == null) {
+                            throw new Error("invalid channelData");
+                        }
+                        debug.info(`${this.channelData.channel_id} pc2.onicecandidate (before)`, JSON.stringify(iceCandidate));
+                        this.iceCandidates.push(iceCandidate);
+                    }
+                }
+            };
+
+            this.pc.ondatachannel = event => {
+                this.dc = event.channel;
+                this.dc.binaryType = "arraybuffer";
+                this.dc.onopen = () => {
+                    debug.info("pc2: data channel open");
+                    if (this.dc == null) {
+                        throw new Error("invalid dataChannel");
+                    }
+                    this.dc.onmessage = (e: MessageEvent) => {
+                        this.emit("data", e.data);
+                    };
+                    this.emit("connected");
+                    resolve();
+                };
+            };
+
+            try {
+                const result = await fetch(`${this.getAddress()}/channels`, {
+                    method: "POST",
+                    headers: this.getHeaders()
+                });
+                const data: ChannelData = await result.json();
+                debug.info("connect", data);
+                this.channelData = data;
+                this.setRemoteDescription2(data.offer as RTCSessionDescriptionInit);
+                data.ice_candidates.forEach(iceCandidate => {
                     if (this.channelData == null) {
                         throw new Error("invalid channelData");
                     }
-                    debug.info(`${this.channelData.channel_id} pc2.onicecandidate (before)`, JSON.stringify(iceCandidate));
-                    this.iceCandidates.push(iceCandidate);
-                }
+                    debug.info(`${this.channelData.channel_id} adding remote ice candidates`, JSON.stringify(iceCandidate));
+                    if (this.pc == null) {
+                        throw new Error("invalid pc");
+                    }
+                    this.pc.addIceCandidate(new this.wrtc.RTCIceCandidate(iceCandidate as RTCIceCandidateInit));
+                });
+            } catch (error) {
+                this.emit("error", error);
+                reject(error);
             }
-        };
-
-        this.pc.ondatachannel = event => {
-            this.dc = event.channel;
-            this.dc.binaryType = "arraybuffer";
-            this.dc.onopen = () => {
-                debug.info("pc2: data channel open");
-                this.emit("connected");
-                if (this.dc == null) {
-                    throw new Error("invalid dataChannel");
-                }
-                this.dc.onmessage = (e: MessageEvent) => {
-                    this.emit("data", e.data);
-                };
-            };
-        };
-
-        try {
-            const result = await fetch(`${this.getAddress()}/channels`, {
-                method: "POST",
-                headers: this.getHeaders()
-            });
-            const data: ChannelData = await result.json();
-            debug.info("connect", data);
-            this.channelData = data;
-            this.setRemoteDescription2(data.offer as RTCSessionDescriptionInit);
-            data.ice_candidates.forEach(iceCandidate => {
-                if (this.channelData == null) {
-                    throw new Error("invalid channelData");
-                }
-                debug.info(`${this.channelData.channel_id} adding remote ice candidates`, JSON.stringify(iceCandidate));
-                if (this.pc == null) {
-                    throw new Error("invalid pc");
-                }
-                this.pc.addIceCandidate(new this.wrtc.RTCIceCandidate(iceCandidate as RTCIceCandidateInit));
-            });
-        } catch (error) {
-            this.emit("error", error);
-        }
+        });
     }
 
     public send(msg: any): void {
