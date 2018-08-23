@@ -18,9 +18,19 @@ export class Client extends EventEmitter {
 
         if (!this.wrtc) {
             if (typeof window === "undefined") {
-                this.emit("error", "No WebRTC support: Specify `opts.wrtc` option in this environment");
+                const error = new Error("No WebRTC support: Specify `opts.wrtc` option in this environment");
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    throw error;
+                }
             } else {
-                this.emit("error", "No WebRTC support: Not a supported browser");
+                const error = new Error("No WebRTC support: Not a supported browser");
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    throw error;
+                }
             }
         }
 
@@ -85,6 +95,14 @@ export class Client extends EventEmitter {
                     return;
                 }
                 debug.info("connection-state", this.pc.connectionState);
+                if (this.pc.connectionState === "failed") {
+                    const err = new Error("pc.connectionState = failed");
+                    if (this.listeners("connected").length > 0) {
+                        this.emit("error", err);
+                    } else {
+                        reject(err);
+                    }
+                }
             };
 
             this.pc.onicecandidate = (candidate: RTCPeerConnectionIceEvent): void => {
@@ -141,44 +159,66 @@ export class Client extends EventEmitter {
                     this.pc.addIceCandidate(new this.wrtc.RTCIceCandidate(iceCandidate as RTCIceCandidateInit));
                 });
             } catch (error) {
-                this.emit("error", error);
-                reject(error);
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    reject(error);
+                }
             }
         });
     }
 
-    public send(msg: any): void {
-        if (this.dc == null) {
-            this.emit("error", new Error("dataChannel not available. Not connected?"));
-            return;
-        }
-        this.dc.send(msg);
+    public async send(msg: any): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.dc == null) {
+                const error = new Error("dataChannel not available. Not connected?");
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    reject(error);
+                }
+                return;
+            }
+            this.dc.send(msg);
+            resolve();
+        });
     }
 
     private handleError: RTCPeerConnectionErrorCallback = (error: DOMError): void => debug.info("error", error);
 
     public async stop(): Promise<void> {
-        if (this.channelData == null) {
-            this.emit("error", new Error("channelData is empty. Not connected?"));
-            return;
-        }
-
-        try {
-            const result = await fetch(`${this.getAddress()}/channels/${this.channelData.channel_id}/close`, {
-                method: "POST",
-                headers: this.getHeaders()
-            });
-            const resultJson = await result.json();
-
-            this.emit("closed");
+        return new Promise<void>(async (resolve, reject) => {
             if (this.channelData == null) {
-                throw new Error("invalid channelData");
+                const error = new Error("channelData is empty. Not connected?");
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    reject(error);
+                }
+                return;
             }
 
-            debug.info(`${this.channelData.channel_id} closed`, resultJson);
-        } catch (error) {
-            this.emit("error", error);
-        }
+            try {
+                const result = await fetch(`${this.getAddress()}/channels/${this.channelData.channel_id}/close`, {
+                    method: "POST",
+                    headers: this.getHeaders()
+                });
+                const resultJson = await result.json();
+
+                if (this.channelData == null) {
+                    throw new Error("invalid channelData");
+                }
+                debug.info(`${this.channelData.channel_id} closed`, resultJson);
+                this.emit("closed");
+                resolve();
+            } catch (error) {
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    reject(error);
+                }
+            }
+        });
     }
 
     /**
@@ -206,35 +246,48 @@ export class Client extends EventEmitter {
     }
 
     private async setRemoteDescription1(desc: RTCSessionDescription): Promise<void> {
-        if (this.channelData == null) {
-            throw new Error("invalid channelData");
-        }
-        debug.info(`${this.channelData.channel_id} pc2: set remote description1 (send to node)`, desc.type, desc.sdp);
-        try {
-            if (this.iceCandidateMutex == null) {
-                throw new Error("invalid iceCandidateMutex");
+        return new Promise<void>(async (resolve, reject) => {
+            if (this.channelData == null) {
+                const error = new Error("invalid channelData");
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    reject(error);
+                }
+                return;
             }
-            this.iceCandidateMutex.runExclusive(async () => {
-                if (this.channelData == null) {
-                    throw new Error("invalid channelData");
+            debug.info(`${this.channelData.channel_id} pc2: set remote description1 (send to node)`, desc.type, desc.sdp);
+            try {
+                if (this.iceCandidateMutex == null) {
+                    throw new Error("invalid iceCandidateMutex");
                 }
-                const result = await fetch(`${this.getAddress()}/channels/${this.channelData.channel_id}/answer`, {
-                    method: "POST",
-                    headers: this.getHeaders(),
-                    body: JSON.stringify({
-                        answer: desc,
-                        ice_candidates: this.iceCandidates
-                    })
+                this.iceCandidateMutex.runExclusive(async () => {
+                    if (this.channelData == null) {
+                        throw new Error("invalid channelData");
+                    }
+                    const result = await fetch(`${this.getAddress()}/channels/${this.channelData.channel_id}/answer`, {
+                        method: "POST",
+                        headers: this.getHeaders(),
+                        body: JSON.stringify({
+                            answer: desc,
+                            ice_candidates: this.iceCandidates
+                        })
+                    });
+                    const resultJson = await result.json();
+                    if (this.channelData == null) {
+                        throw new Error("invalid channelData");
+                    }
+                    debug.info(`${this.channelData.channel_id} setRemoteDescription1`, resultJson);
+                    resolve();
                 });
-                const resultJson = await result.json();
-                if (this.channelData == null) {
-                    throw new Error("invalid channelData");
+            } catch (error) {
+                if (this.listeners("connected").length > 0) {
+                    this.emit("error", error);
+                } else {
+                    reject(error);
                 }
-                debug.info(`${this.channelData.channel_id} setRemoteDescription1`, resultJson);
-            });
-        } catch (error) {
-            this.emit("error", error);
-        }
+            }
+        });
     }
 
     private setLocalDescription2(desc: RTCSessionDescriptionInit): void {
