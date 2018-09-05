@@ -4,8 +4,12 @@ class Debugger {
 
     public info(...message: any[]): void {
         if (this.showMessages) {
-            this.console.info(this.prefix, message);
+            this.console.info(this.prefix, ...message);
         }
+    }
+
+    public warn(...message: any[]): void {
+        this.console.warn(this.prefix, ...message);
     }
 }
 

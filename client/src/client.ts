@@ -8,6 +8,8 @@ interface Options {
     proxyAddress?: string;
     // TODO: fix any.
     wrtc?: any;
+    /** If specified, then filter local candidate by IP. */
+    candidateIp?: string;
 }
 
 export class Client extends EventEmitter {
@@ -35,6 +37,7 @@ export class Client extends EventEmitter {
         }
 
         this.iceCandidates = [];
+        this.candidateIp = opts.candidateIp;
     }
 
     private channelData: ChannelData | undefined;
@@ -45,6 +48,8 @@ export class Client extends EventEmitter {
     private pc: RTCPeerConnection | undefined;
     // TODO: fix any.
     private wrtc: any;
+    /** If specified, then filter local candidate by IP. */
+    private candidateIp: string | undefined;
 
     public async connect(): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
@@ -54,10 +59,18 @@ export class Client extends EventEmitter {
             }
 
             this.iceCandidateMutexRelease = await this.iceCandidateMutex.acquire();
-            const isUDP = (candidate: RTCIceCandidate) => {
-                if (candidate.candidate) {
-                    return candidate.candidate.toUpperCase().includes("UDP");
+
+            const checkPassCandidate = (rtcIceCandidate: RTCIceCandidate): boolean => {
+                if (rtcIceCandidate.candidate == null) {
+                    return false;
                 }
+                if (!rtcIceCandidate.candidate.toUpperCase().includes("UDP")) {
+                    return false;
+                }
+                if (this.candidateIp != null && !rtcIceCandidate.candidate.toUpperCase().includes(this.candidateIp)) {
+                    return false;
+                }
+                return true;
             };
 
             this.pc = new this.wrtc.RTCPeerConnection({});
@@ -113,7 +126,7 @@ export class Client extends EventEmitter {
                     this.iceCandidateMutexRelease();
                 } else {
                     const iceCandidate: RTCIceCandidate = candidate.candidate;
-                    if (isUDP(iceCandidate)) {
+                    if (checkPassCandidate(iceCandidate)) {
                         if (this.channelData == null) {
                             throw new Error("invalid channelData");
                         }
@@ -264,6 +277,9 @@ export class Client extends EventEmitter {
                 this.iceCandidateMutex.runExclusive(async () => {
                     if (this.channelData == null) {
                         throw new Error("invalid channelData");
+                    }
+                    if (this.iceCandidates.length === 0) {
+                        debug.warn("No local ICE candidates found");
                     }
                     const result = await fetch(`${this.getAddress()}/channels/${this.channelData.channel_id}/answer`, {
                         method: "POST",
