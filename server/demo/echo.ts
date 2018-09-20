@@ -11,7 +11,7 @@ webRtcDirect.on("connection", (channel: Channel) => {
     channel.on("data", (data: any) => {
         handleRequest(data, channel);
     });
-    channel.on("error", (error: Error) => {
+    channel.on("error", error => {
         logger.info(`${channel.id} error`, error);
     });
     channel.on("closed", () => {

@@ -1,8 +1,17 @@
-import { EventEmitter } from "events";
+import * as EventEmitter from "events";
 import * as wrtc from "wrtc";
-import { Statuses } from "./index";
+import StrictEventEmitter from "strict-event-emitter-types";
+import { Statuses } from "./webrtc-direct";
 
-export class Channel extends EventEmitter {
+export interface ChannelEvents {
+    closed: (this: Channel) => this;
+    data: (this: Channel, data: string | Buffer | ArrayBuffer) => this;
+    error: (this: Channel, error: Error) => this;
+}
+
+const ChannelEmitter: { new (): StrictEventEmitter<EventEmitter, ChannelEvents> } = EventEmitter;
+
+export class Channel extends ChannelEmitter {
     constructor(pc: wrtc.RTCPeerConnection) {
         super();
 

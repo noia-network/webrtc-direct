@@ -4,8 +4,10 @@ import * as express from "express";
 import * as http from "http";
 import * as morgan from "morgan";
 import * as wrtc from "wrtc";
-import { RTCPeerConnectionState } from "wrtc";
+import StrictEventEmitter from "strict-event-emitter-types";
 import chalk from "chalk";
+import { RTCPeerConnectionState } from "wrtc";
+
 import { Channel } from "./channel";
 import { EventEmitter } from "events";
 import { UdpProxy } from "./udp-proxy";
@@ -22,7 +24,16 @@ export enum Statuses {
     Answered
 }
 
-export class WebRtcDirect extends EventEmitter {
+export interface WebRtcDirectEvents {
+    listening: (this: WebRtcDirect) => this;
+    closed: (this: WebRtcDirect) => this;
+    connection: (this: WebRtcDirect, channel: Channel) => this;
+    error: (this: WebRtcDirect, error: Error) => this;
+}
+
+const WebRtcDirectEmitter: { new (): StrictEventEmitter<EventEmitter, WebRtcDirectEvents> } = EventEmitter;
+
+export class WebRtcDirect extends WebRtcDirectEmitter {
     constructor(
         private readonly controlPort: number,
         private readonly dataPort: number,
@@ -108,7 +119,7 @@ export class WebRtcDirect extends EventEmitter {
     private postChannels(req: express.Request, res: express.Response): void {
         const isUDP = (candidate: wrtc.IceCandidate): boolean => {
             if (typeof candidate.candidate !== "string") {
-                throw new Error("invalid candidate");
+                throw new Error("Invalid candidate.");
             }
 
             return candidate.candidate.includes("udp");
@@ -160,7 +171,7 @@ export class WebRtcDirect extends EventEmitter {
          */
         function mapPorts(iceCandidate: wrtc.IceCandidate, dataPort: number, dataIp?: string): wrtc.IceCandidate {
             if (iceCandidate.candidate == null) {
-                throw new Error("invalid iceCandidate");
+                throw new Error("Invalid iceCandidate.");
             }
 
             const cs: string[] = iceCandidate.candidate.split(" ");
@@ -207,9 +218,9 @@ export class WebRtcDirect extends EventEmitter {
         Promise.all([iceCandidateDeferred.promise, localDescriptionDeferred.promise]).then(() => {
             res.status(200).json({
                 success: true,
-                channel_id: channel.id,
+                channelId: channel.id,
                 offer: localDescription,
-                ice_candidates: iceCandidates
+                iceCandidates: iceCandidates
             });
         });
 
@@ -257,7 +268,7 @@ export class WebRtcDirect extends EventEmitter {
 
         function setRemoteDescription1(desc: RTCSessionDescriptionInit): void {
             if (channel == null) {
-                throw new Error("channel null");
+                throw new Error("Channel is null.");
             }
 
             logger.verbose(`${LOG_PREFIX} ${chalk.magentaBright(`${channel.id} pc1: set remote description`)}`, desc.sdp);
@@ -268,7 +279,7 @@ export class WebRtcDirect extends EventEmitter {
                         success: true
                     });
                     if (channel == null) {
-                        throw new Error("channel shouldn't be destroyed!");
+                        throw new Error("Channel is destroyed!");
                     }
                     logger.verbose(`${LOG_PREFIX} ${chalk.cyanBright("channel.pc.localDescription.sdp")}`, channel.pc.localDescription.sdp);
                     logger.verbose(
@@ -297,7 +308,7 @@ export class WebRtcDirect extends EventEmitter {
      */
     private mapPortsFromBrowser(req: express.Request, channel: Channel, iceCandidate: wrtc.IceCandidate): wrtc.IceCandidate {
         if (iceCandidate.candidate == null) {
-            throw new Error("invalid candidate");
+            throw new Error("Invalid candidate.");
         }
 
         const cs: string[] = iceCandidate.candidate.split(" ");
@@ -310,18 +321,18 @@ export class WebRtcDirect extends EventEmitter {
 
     private addIceCandidates(req: express.Request, channel: Channel, iceCandidates: wrtc.IceCandidate[]): void {
         if (channel == null) {
-            throw new Error("channel null");
+            throw new Error("Channel is null.");
         }
 
         const channelId = channel.id;
         iceCandidates.forEach((iceCandidate: wrtc.IceCandidate) => {
             logger.verbose(`${LOG_PREFIX} ${chalk.cyanBright(`${channelId} pc1: adding ice candidate from browser`)}`, iceCandidate);
             if (channel == null) {
-                throw new Error("channel null");
+                throw new Error("Channel is null.");
             }
             iceCandidate = this.mapPortsFromBrowser(req, channel, iceCandidate);
             if (channel.localAddress == null || channel.remoteAddress == null) {
-                throw new Error("localAddress or remoteAddress is null");
+                throw new Error("Channel localAddress or remoteAddress is null.");
             }
             this.udpProxy.setMap(channel.localAddress, channel.remoteAddress);
             channel.pc.addIceCandidate(new wrtc.RTCIceCandidate(iceCandidate));
@@ -362,7 +373,7 @@ export class WebRtcDirect extends EventEmitter {
      */
     private channelClose(channel: Channel): void {
         if (channel.localAddress == null || channel.remoteAddress == null) {
-            throw new Error("localAddress or remoteAddress cannot be invalid!");
+            throw new Error("Channel localAddress or remoteAddress is invalid!");
         }
 
         channel.pc.close();

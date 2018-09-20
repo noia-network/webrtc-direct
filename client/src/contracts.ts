@@ -1,5 +1,6 @@
 interface ChannelData {
-    channel_id: string;
-    ice_candidates: RTCIceCandidate[];
+    success: boolean;
+    channelId: string;
+    iceCandidates: RTCIceCandidate[];
     offer: RTCSessionDescription;
 }

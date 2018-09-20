@@ -1,17 +1,16 @@
 {
     "compilerOptions": {
+        "module": "commonjs",
+        "target": "es6",
+        "rootDir": "./src",
+        "outDir": "./dist",
         "declaration": true,
         "inlineSourceMap": true,
-        "inlineSources": true,
-        "module": "commonjs",
         "lib": ["dom", "es2017"],
-        "moduleResolution": "node",
         "noEmitHelpers": true,
         "importHelpers": true,
-        "outDir": "dist",
-        "rootDir": "src",
+        "noImplicitAny": true,
         "strict": true,
-        "target": "es6",
         "plugins": [
             {
                 "name": "tslint-language-service",
