@@ -1,13 +1,22 @@
+import * as EventEmitter from "events";
 import * as dgram from "dgram";
+import StrictEventEmitter from "strict-event-emitter-types";
 import chalk from "chalk";
 import { AddressInfo } from "net";
-import { EventEmitter } from "events";
+
 import { logger } from "./logger";
 
 const SERVER_ADDRESS: string = "0.0.0.0";
 const LOG_PREFIX: string = chalk.blueBright("UDP proxy:");
 
-export class UdpProxy extends EventEmitter {
+export interface UdpProxyEvents {
+    close: (this: UdpProxy) => this;
+    error: (this: UdpProxy, error: Error) => this;
+}
+
+const UdpProxyEmitter: { new (): StrictEventEmitter<EventEmitter, UdpProxyEvents> } = EventEmitter;
+
+export class UdpProxy extends UdpProxyEmitter {
     constructor(public port: number) {
         super();
     }

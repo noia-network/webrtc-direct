@@ -59,7 +59,7 @@ declare module "wrtc" {
     }
 
     interface setLocalDescriptionFn {
-        (rtcSD: RTCSessionDescription, successCallback: () => void, handleError: handleErrorCallback): void;
+        (rtcSD: RTCSessionDescriptionInit, successCallback: () => void, handleError: handleErrorCallback): void;
     }
 
     export class RTCPeerConnection extends EventTarget {
@@ -81,7 +81,7 @@ declare module "wrtc" {
 
         addIceCandidate: (candidate: RTCIceCandidate) => void;
         setRemoteDescription: (rtcSD: RTCSessionDescription, successCallback: () => void, handleError: handleErrorCallback) => void;
-        setLocalDescription: setLocalDescriptionFn;
+        setLocalDescription: (rtcSD: RTCSessionDescription, successCallback: () => void, handleError: handleErrorCallback) => void;
         createOffer: (setLocalDescription: setLocalDescriptionFn, handleError: handleErrorCallback) => void;
         createDataChannel: (name: string) => DataChannel;
         close: () => void;

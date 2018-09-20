@@ -1,6 +1,9 @@
 {
+    "publishConfig": {
+        "tag": "rc"
+    },
     "name": "@noia-network/webrtc-direct-api-proxy",
-    "version": "0.2.14",
+    "version": "1.0.0-rc",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -24,12 +27,12 @@
         "@types/jest": "^23.1.5",
         "jest": "^23.3.0",
         "nodemon": "^1.17.5",
-        "simplr-tslint": "^1.0.0-alpha.13",
+        "simplr-tslint": "^1.0.0-alpha.14",
         "ts-jest": "^23.0.0",
         "ts-node": "^6.1.1",
         "tslint": "^5.10.0",
         "tslint-language-service": "^0.9.9",
-        "typescript": "^2.9.2"
+        "typescript": "^3.0.0"
     },
     "dependencies": {
         "@types/body-parser": "^1.17.0",

@@ -13,7 +13,7 @@ export function getConfig(): { [name: string]: string } {
 
 export function filterIp(channel: Channel): string {
     if (channel.remoteAddress == null) {
-        throw new Error("remoteAddress cannot be invalid.");
+        throw new Error("Channel remoteAddress is invalid.");
     }
     return channel.remoteAddress.split(":")[0];
 }
