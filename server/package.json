@@ -52,7 +52,7 @@
         "strict-event-emitter-types": "^2.0.0",
         "tslib": "^1.9.3",
         "winston": "^3.0.0",
-        "wrtc": "^0.2.0"
+        "wrtc": "^0.2.1"
     },
     "files": [
         "dist",
