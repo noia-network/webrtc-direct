@@ -3,7 +3,7 @@
         "tag": "rc"
     },
     "name": "@noia-network/webrtc-direct-client",
-    "version": "1.0.0-rc",
+    "version": "1.0.1-rc",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "author": {
