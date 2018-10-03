@@ -1,9 +1,9 @@
 {
     "publishConfig": {
-        "tag": "rc"
+        "tag": "alpha"
     },
     "name": "@noia-network/webrtc-direct-server",
-    "version": "1.0.1-rc",
+    "version": "1.0.0-alpha",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -35,7 +35,7 @@
         "typescript": "^3.0.0"
     },
     "dependencies": {
-        "@noia-network/node-contents-client": "^1.0.0-rc",
+        "@noia-network/node-contents-client": "^1.0.0-alpha",
         "@types/body-parser": "^1.17.0",
         "@types/dotenv": "^4.0.3",
         "@types/express": "^4.16.0",
