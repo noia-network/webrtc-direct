@@ -1,8 +1,9 @@
-const ContentsClient = require("@noia-network/node-contents-client"); // tslint:disable-line
+import { ContentsClient } from "@noia-network/node-contents-client";
 import { Channel } from "../src/channel";
 import { WebRtcDirect } from "../src/index";
 import { countChannels, filterIp, getConfig } from "./common";
 import { logger } from "../src/logger";
+import { Content } from "@noia-network/node-contents-client/dist/content";
 
 const config = getConfig();
 const contentsClient = new ContentsClient(null, config.STORAGE_DIR);
@@ -37,7 +38,7 @@ function registerContentsClientListeners(): void {
     });
 }
 
-function handleRequest(data: string, channel: Channel): void {
+async function handleRequest(data: string, channel: Channel): Promise<void> {
     let params;
     try {
         params = JSON.parse(data);
@@ -59,25 +60,23 @@ function handleRequest(data: string, channel: Channel): void {
         console.info(`request infoHash=${infoHash} index=${piece} offset=${offset} length=${length}`);
     }
 
-    const content = contentsClient.get(infoHash);
+    const content = contentsClient.get(infoHash) as Content;
 
     if (typeof content === "undefined") {
         console.error(`404 response infoHash=${infoHash}`);
         return;
     }
 
-    // tslint:disable-next-line:no-any
-    content.getResponseBuffer(piece, offset, length, (resBuff: any) => {
-        logger.info(`response infoHash=${infoHash} index=${piece} offset=${offset} length=${resBuff.length}`);
-        try {
-            if (channel.dc == null) {
-                logger.warn("invalid channel.dc");
-                return;
-            }
-            channel.dc.send(resBuff);
-            content.emit("uploaded", resBuff.length);
-        } catch (e) {
-            console.warn("Send content", e); // TODO: log property or just ignore.
+    const response = await content.getResponseBuffer(piece, offset, length);
+    logger.info(`response infoHash=${infoHash} index=${piece} offset=${offset} length=${response.buffer.length}`);
+    try {
+        if (channel.dc == null) {
+            logger.warn("invalid channel.dc");
+            return;
         }
-    });
+        channel.dc.send(response.buffer);
+        content.emit("uploaded", response.buffer.length);
+    } catch (e) {
+        console.warn("Send content", e); // TODO: log property or just ignore.
+    }
 }
