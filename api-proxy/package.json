@@ -1,9 +1,9 @@
 {
     "publishConfig": {
-        "tag": "alpha"
+        "tag": "rc"
     },
     "name": "@noia-network/webrtc-direct-api-proxy",
-    "version": "1.0.0-alpha.2",
+    "version": "1.0.1-rc.2",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

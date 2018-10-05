@@ -67,7 +67,7 @@ async function handleRequest(data: string, channel: Channel): Promise<void> {
         return;
     }
 
-    const response = await content.getResponseBuffer(piece, offset, length);
+    const response = await content.getContentData(piece, offset, length);
     logger.info(`response infoHash=${infoHash} index=${piece} offset=${offset} length=${response.buffer.length}`);
     try {
         if (channel.dc == null) {
