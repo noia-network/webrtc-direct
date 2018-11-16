@@ -1,9 +1,6 @@
 {
-    "publishConfig": {
-        "tag": "rc"
-    },
     "name": "@noia-network/webrtc-direct-server",
-    "version": "1.0.1-rc.2",
+    "version": "1.0.0",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -23,6 +20,9 @@
         "name": "NOIA Network Limited"
     },
     "license": "LGPL-2.1",
+    "peerDependencies": {
+        "@noia-network/node-contents-client": "^1.0.1"
+    },
     "devDependencies": {
         "@types/jest": "^23.1.5",
         "jest": "^23.3.0",
@@ -35,7 +35,7 @@
         "typescript": "^3.0.0"
     },
     "dependencies": {
-        "@noia-network/node-contents-client": "^1.0.0-rc.2",
+        "@noia-network/node-contents-client": "^1.0.1",
         "@types/body-parser": "^1.17.0",
         "@types/dotenv": "^4.0.3",
         "@types/express": "^4.16.0",
