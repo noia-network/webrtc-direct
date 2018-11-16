@@ -1,8 +1,9 @@
+import * as fetch from "node-fetch";
 import * as getBrowserRtc from "get-browser-rtc";
 import StrictEventEmitter from "strict-event-emitter-types";
-import fetch from "node-fetch";
 import { EventEmitter } from "events";
 import { Mutex, MutexInterface } from "async-mutex";
+
 import { debug } from "./debug";
 
 interface Options {
