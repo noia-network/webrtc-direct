@@ -21,7 +21,7 @@
     },
     "license": "LGPL-2.1",
     "peerDependencies": {
-        "@noia-network/node-contents-client": "^1.0.1"
+        "@noia-network/node-contents-client": "^2.0.0"
     },
     "devDependencies": {
         "@types/jest": "^23.1.5",
@@ -35,7 +35,7 @@
         "typescript": "^3.0.0"
     },
     "dependencies": {
-        "@noia-network/node-contents-client": "^1.0.1",
+        "@noia-network/node-contents-client": "^2.0.0",
         "@types/body-parser": "^1.17.0",
         "@types/dotenv": "^4.0.3",
         "@types/express": "^4.16.0",
