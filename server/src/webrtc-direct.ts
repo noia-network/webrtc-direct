@@ -176,7 +176,7 @@ export class WebRtcDirect extends WebRtcDirectEmitter {
 
             const cs: string[] = iceCandidate.candidate.split(" ");
             channel.localAddress = `${cs[4]}:${cs[5]}`;
-            if (dataIp != null) {
+            if (dataIp != null && dataIp !== "0.0.0.0") {
                 cs[4] = dataIp;
             }
             cs[5] = dataPort.toString();
@@ -225,10 +225,13 @@ export class WebRtcDirect extends WebRtcDirectEmitter {
         });
 
         function setRemoteDescription2(desc: RTCSessionDescriptionInit): void {
-            setTimeout(() => {
-                localDescription = desc;
-                localDescriptionDeferred.resolve();
-            }, DO_TIMEOUT ? 10000 : 0);
+            setTimeout(
+                () => {
+                    localDescription = desc;
+                    localDescriptionDeferred.resolve();
+                },
+                DO_TIMEOUT ? 10000 : 0
+            );
         }
 
         function setLocalDescription1(desc: RTCSessionDescriptionInit): void {
