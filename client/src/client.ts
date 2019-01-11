@@ -1,4 +1,4 @@
-import * as fetch from "node-fetch";
+import fetch from "node-fetch";
 import * as getBrowserRtc from "get-browser-rtc";
 import StrictEventEmitter from "strict-event-emitter-types";
 import { EventEmitter } from "events";
@@ -329,6 +329,7 @@ export class Client extends ClientEmitter {
         // @ts-ignore
         this.pc.setLocalDescription(
             new this.wrtc.RTCSessionDescription(desc) as RTCSessionDescriptionInit,
+            //@ts-ignore
             this.setRemoteDescription1.bind(this, desc),
             this.handleError.bind(this)
         );
