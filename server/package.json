@@ -1,6 +1,6 @@
 {
     "name": "@noia-network/webrtc-direct-server",
-    "version": "1.0.5",
+    "version": "1.0.8",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

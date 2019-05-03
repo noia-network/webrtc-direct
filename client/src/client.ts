@@ -107,6 +107,14 @@ export class Client extends ClientEmitter {
                     return;
                 }
                 debug.info("ice-connection-state", this.pc.iceConnectionState);
+                if (this.pc.iceConnectionState === "failed") {
+                    const err = new Error("pc.iceConnectionState = failed");
+                    if (this.listeners("connected").length > 0) {
+                        this.emit("error", err);
+                    } else {
+                        reject(err);
+                    }
+                }
             };
             this.pc.onicegatheringstatechange = event => {
                 if (this.pc == null) {
@@ -119,14 +127,6 @@ export class Client extends ClientEmitter {
                     return;
                 }
                 debug.info("connection-state", this.pc.connectionState);
-                if (this.pc.connectionState === "failed") {
-                    const err = new Error("pc.connectionState = failed");
-                    if (this.listeners("connected").length > 0) {
-                        this.emit("error", err);
-                    } else {
-                        reject(err);
-                    }
-                }
             };
 
             this.pc.onicecandidate = (candidate: RTCPeerConnectionIceEvent): void => {
