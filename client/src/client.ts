@@ -102,11 +102,19 @@ export class Client extends ClientEmitter {
                 }
                 debug.info("signaling-state", this.pc.signalingState);
             };
-            this.pc.oniceconnectionstatechange = event => {
+            this.pc.oniceconnectionstatechange = _event => {
                 if (this.pc == null) {
                     return;
                 }
                 debug.info("ice-connection-state", this.pc.iceConnectionState);
+                if (this.pc.iceConnectionState === "failed") {
+                    const err = new Error("pc.connectionState = failed");
+                    if (this.listeners("connected").length > 0) {
+                        this.emit("error", err);
+                    } else {
+                        reject(err);
+                    }
+                }
             };
             this.pc.onicegatheringstatechange = event => {
                 if (this.pc == null) {
